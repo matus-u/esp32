@@ -23,6 +23,7 @@
 //const char* password = "";
 
 void startCameraServer();
+void stopCameraServer();
 
 void setup() {
   Serial.begin(115200);
@@ -93,33 +94,30 @@ void setup() {
   s->set_framesize(s, FRAMESIZE_SVGA);
   s->set_quality(s, 10);
 
-  //WiFi.begin(ssid, password);
-
-  //while (WiFi.status() != WL_CONNECTED) {
-  //  delay(500);
-  //  Serial.print(".");
-  //}
-  //Serial.println("");
-  //Serial.println("WiFi connected");
-
-  //startCameraServer();
-
-  //Serial.print("Camera Ready! Use 'http://");
-  //Serial.print(WiFi.localIP());
-  //Serial.println("' to connect");
-
   Serial.println("READY");
 }
 
 void loop() {
+  int wifi_enabled = 0;
   String code = Serial.readStringUntil('\n');
-  if (code == "TAKE") {
-    camera_fb_t * fb = esp_camera_fb_get();
-    Serial.println(fb->len);
-    Serial.write(fb->buf, fb->len);
-    esp_camera_fb_return(fb);
+  if (code == "WIFI") {
+    if (wifi_enabled == 0) {
+      WiFi.softAP("ivanka-ssid", "ivanka-password");
+      startCameraServer();
+      delay(100);
+    }
+    IPAddress IP = WiFi.softAPIP();
+    Serial.println("WIFI ENABLED - " + IP.toString());
+    wifi_enabled = 1;
+
+  } else if (code == "WIFI-DISABLE") {
+    if (wifi_enabled != 0) {
+      stopCameraServer();
+      WiFi.softAPdisconnect(true);
+    }
+    Serial.println("WIFI DISABLED");
+    wifi_enabled = 0;
   }
-    
-  // put your main code here, to run repeatedly:
+
   delay(300);
 }

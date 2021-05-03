@@ -215,6 +215,14 @@ static size_t jpg_encode_stream(void * arg, size_t index, const void* data, size
     return len;
 }
 
+/*
+-    camera_fb_t * fb = esp_camera_fb_get();
+-    Serial.println(fb->len);
+-    Serial.write(fb->buf, fb->len);
+-    esp_camera_fb_return(fb);
+
+*/
+
 static esp_err_t capture_handler(httpd_req_t *req){
     camera_fb_t * fb = NULL;
     esp_err_t res = ESP_OK;
@@ -588,6 +596,28 @@ static esp_err_t index_handler(httpd_req_t *req){
     return httpd_resp_send(req, (const char *)index_ov2640_html_gz, index_ov2640_html_gz_len);
 }
 
+
+void default_init() {
+
+    ra_filter_init(&ra_filter, 20);
+
+    mtmn_config.type = FAST;
+    mtmn_config.min_face = 80;
+    mtmn_config.pyramid = 0.707;
+    mtmn_config.pyramid_times = 4;
+    mtmn_config.p_threshold.score = 0.6;
+    mtmn_config.p_threshold.nms = 0.7;
+    mtmn_config.p_threshold.candidate_number = 20;
+    mtmn_config.r_threshold.score = 0.7;
+    mtmn_config.r_threshold.nms = 0.7;
+    mtmn_config.r_threshold.candidate_number = 10;
+    mtmn_config.o_threshold.score = 0.7;
+    mtmn_config.o_threshold.nms = 0.7;
+    mtmn_config.o_threshold.candidate_number = 1;
+
+    face_id_init(&id_list, FACE_ID_SAVE_NUMBER, ENROLL_CONFIRM_TIMES);
+}
+
 void startCameraServer(){
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
 
@@ -626,26 +656,7 @@ void startCameraServer(){
         .user_ctx  = NULL
     };
 
-
-    ra_filter_init(&ra_filter, 20);
-    
-    mtmn_config.type = FAST;
-    mtmn_config.min_face = 80;
-    mtmn_config.pyramid = 0.707;
-    mtmn_config.pyramid_times = 4;
-    mtmn_config.p_threshold.score = 0.6;
-    mtmn_config.p_threshold.nms = 0.7;
-    mtmn_config.p_threshold.candidate_number = 20;
-    mtmn_config.r_threshold.score = 0.7;
-    mtmn_config.r_threshold.nms = 0.7;
-    mtmn_config.r_threshold.candidate_number = 10;
-    mtmn_config.o_threshold.score = 0.7;
-    mtmn_config.o_threshold.nms = 0.7;
-    mtmn_config.o_threshold.candidate_number = 1;
-    
-    face_id_init(&id_list, FACE_ID_SAVE_NUMBER, ENROLL_CONFIRM_TIMES);
-    
-    Serial.printf("Starting web server on port: '%d'\n", config.server_port);
+    //Serial.printf("Starting web server on port: '%d'\n", config.server_port);
     if (httpd_start(&camera_httpd, &config) == ESP_OK) {
         httpd_register_uri_handler(camera_httpd, &index_uri);
         httpd_register_uri_handler(camera_httpd, &cmd_uri);
@@ -655,8 +666,21 @@ void startCameraServer(){
 
     config.server_port += 1;
     config.ctrl_port += 1;
-    Serial.printf("Starting stream server on port: '%d'\n", config.server_port);
+    //Serial.printf("Starting stream server on port: '%d'\n", config.server_port);
     if (httpd_start(&stream_httpd, &config) == ESP_OK) {
         httpd_register_uri_handler(stream_httpd, &stream_uri);
     }
+}
+
+void stopCameraServer(){
+  if (stream_httpd != NULL) {
+    httpd_stop(stream_httpd);
+    stream_httpd = NULL;
+  }
+
+  if (camera_httpd != NULL) {
+    // Stop the httpd server
+    httpd_stop(camera_httpd);
+    camera_httpd = NULL;
+  }
 }
