@@ -26,7 +26,7 @@ void startCameraServer();
 void stopCameraServer();
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
   Serial.setDebugOutput(true);
   Serial.println();
 
@@ -51,10 +51,10 @@ void setup() {
   config.pin_reset = RESET_GPIO_NUM;
   config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG;
-  
+
   // if PSRAM IC present, init with UXGA resolution and higher JPEG quality
   //                      for larger pre-allocated frame buffer.
-  if(psramFound()){
+  if (psramFound()) {
     config.frame_size = FRAMESIZE_UXGA;
     config.jpeg_quality = 10;
     config.fb_count = 2;
@@ -97,26 +97,45 @@ void setup() {
   Serial.println("READY");
 }
 
+static int wifi_enabled = 0;
+
 void loop() {
-  int wifi_enabled = 0;
   String code = Serial.readStringUntil('\n');
-  if (code == "WIFI") {
-    if (wifi_enabled == 0) {
-      WiFi.softAP("ivanka-ssid", "ivanka-password");
+  if (code.startsWith("@")) {
+    String addr1 = code.substring(1,3);
+    String addr2 = code.substring(3,5);
+    String rest = code.substring(5);
+
+    if (rest.startsWith("WIFI=")) {
+      if (wifi_enabled == 1) {
+        stopCameraServer();
+        WiFi.softAPdisconnect(true);
+
+      }
+
+      String ssid = rest.substring(5,15);
+      String password = rest.substring(16,26);
+      WiFi.softAP(ssid.c_str(), password.c_str());
       startCameraServer();
       delay(100);
+      wifi_enabled = 1;
+      Serial.println("@" + addr2 + addr1 + "OKSS");
+    } else if (rest.startsWith("WIOFF")) {
+      if (wifi_enabled == 1) {
+        stopCameraServer();
+        WiFi.softAPdisconnect(true);
+      }
+      Serial.println("@" + addr2 + addr1 + "OKSS");
+      wifi_enabled = 0;
+    } else if (rest.startsWith("WSTAT?")) {
+      if (wifi_enabled == 1) {
+        IPAddress IP = WiFi.softAPIP();
+        Serial.println("@" + addr2 + addr1 + "WSTAT=" + IP.toString() + "SS");
+      }else {
+        Serial.println("@" + addr2 + addr1 + "WSTAT=NOKSS");
+      }
     }
-    IPAddress IP = WiFi.softAPIP();
-    Serial.println("WIFI ENABLED - " + IP.toString());
-    wifi_enabled = 1;
 
-  } else if (code == "WIFI-DISABLE") {
-    if (wifi_enabled != 0) {
-      stopCameraServer();
-      WiFi.softAPdisconnect(true);
-    }
-    Serial.println("WIFI DISABLED");
-    wifi_enabled = 0;
   }
 
   delay(300);
