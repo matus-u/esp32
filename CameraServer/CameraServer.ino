@@ -27,8 +27,7 @@ void stopCameraServer();
 
 void setup() {
   Serial.begin(9600);
-  Serial.setDebugOutput(true);
-  Serial.println();
+  //Serial.setDebugOutput(true);
 
   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
@@ -58,6 +57,7 @@ void setup() {
     config.frame_size = FRAMESIZE_UXGA;
     config.jpeg_quality = 10;
     config.fb_count = 2;
+    Serial.println("AAA");
   } else {
     config.frame_size = FRAMESIZE_SVGA;
     config.jpeg_quality = 12;
@@ -72,7 +72,7 @@ void setup() {
   // camera init
   esp_err_t err = esp_camera_init(&config);
   if (err != ESP_OK) {
-    Serial.printf("Camera init failed with error 0x%x", err);
+    //Serial.printf("Camera init failed with error 0x%x", err);
     return;
   }
 
@@ -94,12 +94,22 @@ void setup() {
   s->set_framesize(s, FRAMESIZE_SVGA);
   s->set_quality(s, 10);
 
-  Serial.println("READY");
+  pinMode(2, OUTPUT);
+  pinMode(4, OUTPUT);
 }
 
 static int wifi_enabled = 0;
 
+void serialPrint(String data){
+  digitalWrite(2, HIGH);
+  delayMicroseconds(100);
+  Serial.println(data);
+  delayMicroseconds(10);
+  digitalWrite(2, LOW);
+}
+
 void loop() {
+
   String code = Serial.readStringUntil('\n');
   if (code.startsWith("@")) {
     String addr1 = code.substring(1,3);
@@ -119,24 +129,22 @@ void loop() {
       startCameraServer();
       delay(100);
       wifi_enabled = 1;
-      Serial.println("@" + addr2 + addr1 + "OKSS");
+      serialPrint("@" + addr2 + addr1 + "OKSS");
     } else if (rest.startsWith("WIOFF")) {
       if (wifi_enabled == 1) {
         stopCameraServer();
         WiFi.softAPdisconnect(true);
       }
-      Serial.println("@" + addr2 + addr1 + "OKSS");
+      serialPrint("@" + addr2 + addr1 + "OKSS");
       wifi_enabled = 0;
     } else if (rest.startsWith("WSTAT?")) {
       if (wifi_enabled == 1) {
         IPAddress IP = WiFi.softAPIP();
-        Serial.println("@" + addr2 + addr1 + "WSTAT=" + IP.toString() + "SS");
-      }else {
-        Serial.println("@" + addr2 + addr1 + "WSTAT=NOKSS");
+        serialPrint("@" + addr2 + addr1 + "WSTAT=" + IP.toString() + "SS");
+      } else {
+        serialPrint("@" + addr2 + addr1 + "WSTAT=NOKSS");
       }
     }
 
   }
-
-  delay(300);
 }
