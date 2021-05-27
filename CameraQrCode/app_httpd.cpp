@@ -69,9 +69,12 @@ static esp_err_t stream_handler(httpd_req_t *req){
     bool detected = false;
     int face_id = 0;
 
+    digitalWrite(4, HIGH);
+
     res = httpd_resp_set_type(req, _STREAM_CONTENT_TYPE);
     if(res != ESP_OK){
-        return res;
+      digitalWrite(4,LOW);
+      return res;
     }
 
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
@@ -120,10 +123,8 @@ static esp_err_t stream_handler(httpd_req_t *req){
         }
     }
 
+    digitalWrite(4,LOW);
     return res;
-}
-
-void default_init() {
 }
 
 void startCameraServer(){
