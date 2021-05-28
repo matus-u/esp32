@@ -32,13 +32,13 @@ void loopQrCodeDetect(void* taskData)
 
     if (!fb)
     {
-      serialPrint("Err: Camera capture failed");
+      //serialPrint("Err: Camera capture failed");
       return;
     }
     
     if (reader->qrCodeDetectTask(&config, fb))
     {
-      serialPrint("DETECTED:");
+      //serialPrint("DETECTED:");
       serialPrint((const char *)reader->buffer);
     }
 
@@ -57,6 +57,7 @@ void cmdProtocolFunc(bool (*handler_func)(const String&, const String&, const St
     String addr1 = code.substring(1,3);
     String addr2 = code.substring(3,5);
     String rest = code.substring(5);
+    serialPrint("@" + rest + "OKSS");
     if (handler_func(addr1, addr2, rest)) {
       return;
     } else {
@@ -213,7 +214,11 @@ void setup()
   pinMode(2, OUTPUT);
   pinMode(4, OUTPUT);
 
-  cmdProtocolFunc(loopProgSelection);
+  serialPrint("READY");
+
+  while ((progNum != 1) && (progNum !=2))
+    cmdProtocolFunc(loopProgSelection);
+  serialPrint("AFTER SELECTION");
 }
 
 void loop()
@@ -225,4 +230,3 @@ void loop()
   }
   delay(100);
 }
-

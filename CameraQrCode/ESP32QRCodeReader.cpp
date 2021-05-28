@@ -24,17 +24,18 @@ bool ESP32QRCodeReader::qrCodeDetectTask(camera_config_t* camera_config, camera_
 
   if (old_width != fb->width || old_height != fb->height)
   {
+    /*
     Serial.printf("Recognizer size change w h len: %d, %d, %d \r\n", fb->width, fb->height, fb->len);
-    Serial.println("Resize the QR-code recognizer.");
+    Serial.println("Resize the QR-code recognizer."); */
     // Resize the QR-code recognizer.
     if (quirc_resize(this->q, fb->width, fb->height) < 0)
     {
-      Serial.println("Resize the QR-code recognizer err (cannot allocate memory).");
+      //Serial.println("Resize the QR-code recognizer err (cannot allocate memory).");
       return false;
     }
     else
     {
-      Serial.println("Resize the QR-code success");
+      //Serial.println("Resize the QR-code success");
       this->old_width = fb->width;
       this->old_height = fb->height;
     }
@@ -47,7 +48,7 @@ bool ESP32QRCodeReader::qrCodeDetectTask(camera_config_t* camera_config, camera_
   int count = quirc_count(this->q);
   if (count == 0)
   {
-    Serial.printf("Error: not a valid qrcode\n");
+    //Serial.printf("Error: not a valid qrcode\n");
     return false;
   }
 
@@ -61,11 +62,11 @@ bool ESP32QRCodeReader::qrCodeDetectTask(camera_config_t* camera_config, camera_
   if (err)
   {
     const char *error = quirc_strerror(err);
-    Serial.printf("Decoding FAILED: %s\n", error);
+    //Serial.printf("Decoding FAILED: %s\n", error);
     return false;
   }
 
-  Serial.printf("Decoding successful:\n");
+  //Serial.printf("Decoding successful:\n");
 
   for (int i = 0; i < data.payload_len; i++)
   {
