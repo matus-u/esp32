@@ -231,11 +231,8 @@ void setup()
   pinMode(2, OUTPUT);
   pinMode(4, OUTPUT);
 
-  serialPrint("READY");
-
   while ((progNum != 1) && (progNum !=2))
     cmdProtocolFunc(loopProgSelection);
-  serialPrint("AFTER SELECTION");
 }
 
 void loop()
