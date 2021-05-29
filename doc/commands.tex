@@ -1,0 +1,119 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[T1]{fontenc}
+\begin{document}
+\title{Commands}
+\author{Matus Ujhelyi}
+\date{\today}
+\maketitle
+\section{Operation description}
+When board starts it is automatically reading serial on 9600 baud rate line by line.
+Every line is expected to be comand.
+To start a program user must send program selection command to the board as first communication, all unrelated is reported with NOK.
+After successfull program selection, board starts selected program and makes other commands available.
+
+\section{Program selection}
+
+At start board accepts this commands: \\
+\\
+\begin{tabular}{|l|l|}
+\hline
+@FF70PRGQRSS\textbackslash r\textbackslash n & Enable QR recognition program \\
+\hline
+@FF70PRGBXSS\textbackslash r\textbackslash n & Enable photo/video program \\
+\hline
+\end{tabular} \\
+\\
+\\
+NOTE: Addresses and CRCs are only explanatory. \\
+\\
+Responds: \\
+\\
+\begin{tabular}{|l|l|}
+\hline
+ @70FFOKSS\textbackslash r\textbackslash n & Program started. \\
+\hline
+ @70FFNOKSS\textbackslash r\textbackslash n & Unexpected command. \\
+\hline
+\end{tabular} \\
+\\
+\\
+NOTE: If line is not within correct protocol, it is ignored. \\
+
+\section{QR recognition program}
+Program that is capable of doing qr recognition. Wifi is in client mode in this program. It connects to existing wifi network and report video/photo over that. Recognized QR code is sent over serial port. \\
+\\
+Possible commands in this program: \\
+\\
+\begin{tabular}{|l|l|}
+\hline
+ @70FFWIFI=ssid|password|SS\textbackslash r\textbackslash n & Connects to wifi. Use '|' as marking characters. \\
+\hline
+ Example: & @70FFWIFI=TP-LINK-B2A4|hard-pass|SS\textbackslash r\textbackslash n \\
+\hline
+ Responds: &\\ 
+ @70FFOKSS\textbackslash r\textbackslash n & Connected to wifi. \\
+ @70FFNOKSS\textbackslash r\textbackslash n & Cannot connect to wifi. \\
+\hline
+\end{tabular} \\ \\
+\\
+\begin{tabular}{|l|l|}
+\hline
+ @70FFWSTAT?SS\textbackslash r\textbackslash n & Reports IP of board if connected. \\
+\hline
+ Responds: &\\ 
+ @70FFWSTAT=192.168.4.1SS\textbackslash r\textbackslash n & IP addr if connected. \\
+ @70FFWSTAT=NOKSS\textbackslash r\textbackslash n & NOK if board is not connected \\
+\hline
+\end{tabular} \\ \\
+\\
+\begin{tabular}{|l|l|}
+\hline
+ @70FFWIOFFSS\textbackslash r\textbackslash n & Disconnect board from wifi. \\
+\hline
+ Responds: &\\ 
+ @70FFWSTAT=OKSS\textbackslash r\textbackslash n & Board disconnected. \\
+\hline
+\end{tabular} \\ \\
+\\
+NOTE: Photo endpoints is IP:80/capture. Video endpoint is IP:81/capture.
+\\
+\section{Photo/video program}
+Program that is doing photos and video streams. Wifi is in AP mode in this program. It creates own wifi network with provided credentials. Video and photos are accessible on predefined endpoints. \\
+\\
+Possible commands in this program: \\
+\\
+\begin{tabular}{|l|l|}
+\hline
+ @70FFWIFI=ssid|password|SS\textbackslash r\textbackslash n & Creates own wifi. Use '|' as marking characters. \\
+\hline
+ Example: & @70FFWIFI=TP-LINK-B2A4|hard-pass|SS\textbackslash r\textbackslash n \\
+\hline
+ Responds: &\\ 
+ @70FFOKSS\textbackslash r\textbackslash n & Wifi created. \\
+ @70FFNOKSS\textbackslash r\textbackslash n & Cannot create wifi network. \\
+\hline
+\end{tabular} \\ \\
+\begin{tabular}{|l|l|}
+\hline
+ @70FFWSTAT?SS\textbackslash r\textbackslash n & Reports IP of board AP. \\
+\hline
+ Responds: &\\ 
+ @70FFWSTAT=192.168.4.1SS\textbackslash r\textbackslash n & AP IP addr if started. \\
+ @70FFWSTAT=NOKSS\textbackslash r\textbackslash n & NOK if AP is not started \\
+\hline
+\end{tabular} \\ \\
+\\
+\begin{tabular}{|l|l|}
+\hline
+ @70FFWIOFFSS\textbackslash r\textbackslash n & Disable AP. \\
+\hline
+ Responds: &\\ 
+ @70FFWSTAT=OKSS\textbackslash r\textbackslash n & AP disconnected. \\
+\hline
+\end{tabular} \\ \\
+\\
+NOTE: Photo endpoints is IP:80/capture. Video endpoint is IP:81/capture.
+\\
+
+\end{document}
+
