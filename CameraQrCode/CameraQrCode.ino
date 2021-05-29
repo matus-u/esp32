@@ -75,7 +75,7 @@ bool wifiConnect(const String& ssid, const String password) {
     while (WiFi.status() != WL_CONNECTED) {
       delay(500);
       i++;
-      if (i == 10) {
+      if (i == 40) {
         return false;
       }
     } 
@@ -102,15 +102,16 @@ String parseSSID(const String& rest)
 {
   int indexOf = rest.indexOf("|");
   if (indexOf >= 5)
-    return rest.substring(5,indexof);
+    return rest.substring(5,indexOf);
   return "";
 }
 
 String parsePassword(const String& rest)
 {
   int indexOf = rest.indexOf("|");
-  if (indexOf >= 5) {
-    return rest.substring(indexOf, rest.lastIndexOf("|"));
+  int lastIndex = rest.lastIndexOf("|");
+  if ((indexOf >= 5) && (indexOf < lastIndex)) {
+    return rest.substring(indexOf+1, lastIndex);
   }
   return "";
 }
