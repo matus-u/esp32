@@ -98,6 +98,23 @@ IPAddress wifiIp() {
   return WiFi.softAPIP();
 }
 
+String parseSSID(const String& rest)
+{
+  int indexOf = rest.indexOf("|");
+  if (indexOf >= 5)
+    return rest.substring(5,indexof);
+  return "";
+}
+
+String parsePassword(const String& rest)
+{
+  int indexOf = rest.indexOf("|");
+  if (indexOf >= 5) {
+    return rest.substring(indexOf, rest.lastIndexOf("|"));
+  }
+  return "";
+}
+
 bool wifiCommands(const String& addr1, const String& addr2, const String& rest) {
   if ((!rest.startsWith("WIFI=")) && (!rest.startsWith("WIOFF")) && (!rest.startsWith("WSTAT?"))) {
     return false;
@@ -109,9 +126,9 @@ bool wifiCommands(const String& addr1, const String& addr2, const String& rest) 
       wifiDisconnect();
     }
 
-    String ssid = rest.substring(5,15);
-    String password = rest.substring(16,26);
-    if (!wifiConnect(ssid, password)) {
+    String ssid = parseSSID(rest);
+    String password = parsePassword(rest);
+    if (ssid == "" || !wifiConnect(ssid, password)) {
       serialPrint("@" + addr2 + addr1 + "NOKSS");
     } else {
       startCameraServer();
