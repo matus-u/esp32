@@ -57,8 +57,12 @@ void cmdProtocolFunc(bool (*handler_func)(const String&, const String&, const St
     String addr1 = code.substring(1,3);
     String addr2 = code.substring(3,5);
     String rest = code.substring(5);
-    serialPrint("@" + rest + "OKSS");
-    if (handler_func(addr1, addr2, rest)) {
+
+    // TODO CHECK OF CRC
+
+    if (rest.startsWith("?")) {
+        serialPrint("@" + addr2 + addr1 + "=ESP32C_1.0SS");
+    } else if (handler_func(addr1, addr2, rest)) {
       return;
     } else {
         serialPrint("@" + addr2 + addr1 + "NOKSS");
