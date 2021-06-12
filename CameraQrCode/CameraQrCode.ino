@@ -13,10 +13,38 @@ static camera_config_t config;
 
 static ESP32QRCodeReader *reader = NULL;
 
+String countCheckSumAsString(const String& str)
+{
+  int sum = 0;
+  for (int i = 0; i< str.length(); i++)
+  {
+    sum+= (int) str.charAt(i);
+  }
+  sum = sum % 256;
+  char buf [3];
+  sprintf(buf, "%02X", sum);
+  String countedStrChecksum;
+  countedStrChecksum += buf[0];
+  countedStrChecksum += buf[1];
+  return countedStrChecksum;
+}
+
+bool checkCheckSum(const String &cmd)
+{
+  if (cmd.length()<=2)
+    return false;
+
+  String checkSum = cmd.substring(cmd.length() -2);
+  if (checkSum == "SS")
+    return true;
+
+  return countCheckSumAsString(cmd.substring(0, cmd.length() - 2)) == checkSum;
+}
+
 void serialPrint(String data){
   digitalWrite(2, HIGH);
   delayMicroseconds(100);
-  Serial.println(data);
+  Serial.println(data+countCheckSumAsString(data));
   delayMicroseconds(10);
   digitalWrite(2, LOW);
 }
@@ -58,14 +86,18 @@ void cmdProtocolFunc(bool (*handler_func)(const String&, const String&, const St
     String addr2 = code.substring(3,5);
     String rest = code.substring(5);
 
-    // TODO CHECK OF CRC
-
+    if (!checkCheckSum(code)) 
+    {
+      serialPrint("@" + addr2 + addr1 + "ERR-CHECKSUM");
+      return;
+    }
+  
     if (rest.startsWith("?")) {
-        serialPrint("@" + addr2 + addr1 + "=ESP32C_1.0SS");
+        serialPrint("@" + addr2 + addr1 + "=ESP32C_1.0");
     } else if (handler_func(addr1, addr2, rest)) {
       return;
     } else {
-        serialPrint("@" + addr2 + addr1 + "NOKSS");
+        serialPrint("@" + addr2 + addr1 + "NOK");
     }
   }
 }
@@ -134,26 +166,26 @@ bool wifiCommands(const String& addr1, const String& addr2, const String& rest) 
     String ssid = parseSSID(rest);
     String password = parsePassword(rest);
     if (ssid == "" || !wifiConnect(ssid, password)) {
-      serialPrint("@" + addr2 + addr1 + "NOKSS");
+      serialPrint("@" + addr2 + addr1 + "NOK");
     } else {
       startCameraServer();
       delay(100);
       wifi_enabled = 1;
-      serialPrint("@" + addr2 + addr1 + "OKSS");
+      serialPrint("@" + addr2 + addr1 + "OK");
     }
   } else if (rest.startsWith("WIOFF")) {
     if (wifi_enabled == 1) {
       stopCameraServer();
       wifiDisconnect();
     }
-    serialPrint("@" + addr2 + addr1 + "OKSS");
+    serialPrint("@" + addr2 + addr1 + "OK");
     wifi_enabled = 0;
   } else if (rest.startsWith("WSTAT?")) {
     if (wifi_enabled == 1) {
       IPAddress IP = wifiIp();
-      serialPrint("@" + addr2 + addr1 + "WSTAT=" + IP.toString() + "SS");
+      serialPrint("@" + addr2 + addr1 + "WSTAT=" + IP.toString());
     } else {
-      serialPrint("@" + addr2 + addr1 + "WSTAT=NOKSS");
+      serialPrint("@" + addr2 + addr1 + "WSTAT=NOK");
     }
   }
   return true;
@@ -207,7 +239,7 @@ bool loopProgSelection(const String& addr1, const String& addr2, const String& r
 
   esp_err_t err = esp_camera_init(&config);
   if (err != ESP_OK) {
-    serialPrint("@" + addr2 + addr1 + "NOKSS");
+    serialPrint("@" + addr2 + addr1 + "NOK");
     return true;
   }
 
@@ -215,7 +247,7 @@ bool loopProgSelection(const String& addr1, const String& addr2, const String& r
     xTaskCreatePinnedToCore(loopQrCodeDetect, "qrCodeDetectTask", 40 * 1024, NULL, 5, NULL, 1);
   }
 
-  serialPrint("@" + addr2 + addr1 + "OKSS");
+  serialPrint("@" + addr2 + addr1 + "OK");
   return true;
 }
 
