@@ -1,5 +1,6 @@
 #include "ESP32QRCodeReader.h"
 #include <WiFi.h>
+#include <Preferences.h>
 
 #include "esp_camera.h"
 
@@ -12,6 +13,9 @@ void qrCodeDetectTask();
 static camera_config_t config;
 
 static ESP32QRCodeReader *reader = NULL;
+
+Preferences preferences;
+static int address485 = 0x30;
 
 String countCheckSumAsString(const String& str)
 {
@@ -39,6 +43,30 @@ bool checkCheckSum(const String &cmd)
     return true;
 
   return countCheckSumAsString(cmd.substring(0, cmd.length() - 2)) == checkSum;
+}
+
+bool checkAddress(String addrs)
+{
+  addrs.toLowerCase();
+  if (addrs == "fe")
+    return true;
+  return ((int) strtol(addrs.c_str(), 0, 16)) == address485;
+}
+
+bool setAddress(const String &restValue)
+{
+  if (restValue.length() <= 4)
+    return false;
+
+  String stringAddress = restValue.substring(2, restValue.length()-2);
+
+  int a = stringAddress.toInt();
+  if (a == 0)
+    return false;
+
+  address485 = preferences.putInt("485address", a);
+  address485 = a;
+  return true;
 }
 
 void serialPrint(String data){
@@ -84,16 +112,26 @@ void cmdProtocolFunc(bool (*handler_func)(const String&, const String&, const St
   if (code.startsWith("@")) {
     String addr1 = code.substring(1,3);
     String addr2 = code.substring(3,5);
-    String rest = code.substring(5);
 
     if (!checkCheckSum(code)) 
     {
       serialPrint("@" + addr2 + addr1 + "ERR-CHECKSUM");
       return;
     }
+
+    String rest = code.substring(5);
+
+    if (!checkAddress(addr2)) 
+    {
+      return;
+    }
   
     if (rest.startsWith("?")) {
         serialPrint("@" + addr2 + addr1 + "=ESP32C_1.0");
+    } else if (rest.startsWith("A=") && setAddress(rest)) {
+      serialPrint("@" + addr2 + addr1 + "OK");
+    } else if (rest.startsWith("A?")) {
+      serialPrint("@" + addr2 + addr1 + "A=" + String(address485, DEC));
     } else if (handler_func(addr1, addr2, rest)) {
       return;
     } else {
@@ -258,6 +296,9 @@ bool loopNoProg(const String& addr1, const String& addr2, const String& rest) {
 void setup()
 {
   Serial.begin(9600);
+
+  preferences.begin("qr-app", false);
+  address485 = preferences.getInt("485address", 0x30);
 
   if (!psramFound())
   {
