@@ -1,18 +1,18 @@
 #include "ESP32QRCodeReader.h"
 #include <WiFi.h>
+#include "Arduino.h"
 #include <Preferences.h>
-
-#include "esp_camera.h"
 
 #define CAMERA_MODEL_AI_THINKER
 #include "camera_pins.h"
 
-void startCameraServer();
+void startCameraServer(QueueHandle_t codeQueue);
 void stopCameraServer();
 void qrCodeDetectTask();
 static camera_config_t config;
 
 static ESP32QRCodeReader *reader = NULL;
+static QueueHandle_t qrCodeQueue = NULL;
 
 Preferences preferences;
 static int address485 = 0x30;
@@ -82,26 +82,20 @@ void loopQrCodeDetect(void* taskData)
 
   reader = new ESP32QRCodeReader();
 
+  camera_fb_t *fb = NULL;
   while (true)
   {
-    camera_fb_t *fb = esp_camera_fb_get();
-
-    if (!fb)
+    if (xQueueReceive(qrCodeQueue, &fb, (TickType_t)pdMS_TO_TICKS(100)))
     {
-      //serialPrint("Err: Camera capture failed");
-      return;
+      if (reader->qrCodeDetectTask(&config, fb))
+      {
+        //serialPrint("DETECTED:");
+        serialPrint((const char *)reader->buffer);
+      }
+      free(fb->buf);
+      free(fb);
+      fb = NULL;
     }
-    
-    if (reader->qrCodeDetectTask(&config, fb))
-    {
-      //serialPrint("DETECTED:");
-      serialPrint((const char *)reader->buffer);
-    }
-
-    esp_camera_fb_return(fb);
-    fb = NULL;
-
-    delay(100);
   }
 }
 
@@ -125,9 +119,9 @@ void cmdProtocolFunc(bool (*handler_func)(const String&, const String&, const St
     {
       return;
     }
-  
+
     if (rest.startsWith("?")) {
-        serialPrint("@" + addr2 + addr1 + "=ESP32C_1.0");
+      serialPrint("@" + addr2 + addr1 + "=ESP32C_1.0");
     } else if (rest.startsWith("A=") && setAddress(rest)) {
       serialPrint("@" + addr2 + addr1 + "OK");
     } else if (rest.startsWith("A?")) {
@@ -135,7 +129,7 @@ void cmdProtocolFunc(bool (*handler_func)(const String&, const String&, const St
     } else if (handler_func(addr1, addr2, rest)) {
       return;
     } else {
-        serialPrint("@" + addr2 + addr1 + "NOK");
+      serialPrint("@" + addr2 + addr1 + "NOK");
     }
   }
 }
@@ -206,7 +200,7 @@ bool wifiCommands(const String& addr1, const String& addr2, const String& rest) 
     if (ssid == "" || !wifiConnect(ssid, password)) {
       serialPrint("@" + addr2 + addr1 + "NOK");
     } else {
-      startCameraServer();
+      startCameraServer(qrCodeQueue);
       delay(100);
       wifi_enabled = 1;
       serialPrint("@" + addr2 + addr1 + "OK");
@@ -282,6 +276,7 @@ bool loopProgSelection(const String& addr1, const String& addr2, const String& r
   }
 
   if (rest.startsWith("PRGQR")) {
+    qrCodeQueue = xQueueCreate(10, sizeof(camera_fb_t*));
     xTaskCreatePinnedToCore(loopQrCodeDetect, "qrCodeDetectTask", 40 * 1024, NULL, 5, NULL, 1);
   }
 
