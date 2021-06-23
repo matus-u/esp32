@@ -87,6 +87,7 @@ void loopQrCodeDetect(void* taskData)
   {
     if (xQueueReceive(qrCodeQueue, &fb, (TickType_t)pdMS_TO_TICKS(100)))
     {
+      Serial.println("DEQUEUE");
       if (reader->qrCodeDetectTask(&config, fb))
       {
         //serialPrint("DETECTED:");
@@ -257,7 +258,7 @@ bool loopProgSelection(const String& addr1, const String& addr2, const String& r
 
     config.pixel_format = PIXFORMAT_GRAYSCALE;
     config.frame_size = FRAMESIZE_QVGA;
-    config.jpeg_quality = 15;
+    config.jpeg_quality = 0;
     config.fb_count = 1;
     progNum = 1;
 

@@ -38,7 +38,7 @@ httpd_handle_t stream_httpd = NULL;
 httpd_handle_t camera_httpd = NULL;
 QueueHandle_t qrCodeQueue = NULL;
 
-static esp_err_t capture_handler(httpd_req_t *req){
+static esp_err_t capture_handler(httpd_req_t *req) {
   camera_fb_t * fb = NULL;
   esp_err_t res = ESP_OK;
 
@@ -46,7 +46,7 @@ static esp_err_t capture_handler(httpd_req_t *req){
   delay(100);
   fb = esp_camera_fb_get();
   if (!fb) {
-    digitalWrite(4,LOW);
+    digitalWrite(4, LOW);
     httpd_resp_send_500(req);
     return ESP_FAIL;
   }
@@ -57,11 +57,11 @@ static esp_err_t capture_handler(httpd_req_t *req){
 
   res = httpd_resp_send(req, (const char *)fb->buf, fb->len);
   esp_camera_fb_return(fb);
-  digitalWrite(4,LOW);
+  digitalWrite(4, LOW);
   return res;
 }
 
-static esp_err_t stream_handler(httpd_req_t *req){
+static esp_err_t stream_handler(httpd_req_t *req) {
   camera_fb_t * fb = NULL;
   esp_err_t res = ESP_OK;
   size_t _jpg_buf_len = 0;
@@ -74,14 +74,14 @@ static esp_err_t stream_handler(httpd_req_t *req){
   digitalWrite(4, HIGH);
 
   res = httpd_resp_set_type(req, _STREAM_CONTENT_TYPE);
-  if(res != ESP_OK){
-    digitalWrite(4,LOW);
+  if (res != ESP_OK) {
+    digitalWrite(4, LOW);
     return res;
   }
 
   httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
 
-  while(true){
+  while (true) {
     detected = false;
     face_id = 0;
     fb = esp_camera_fb_get();
@@ -89,11 +89,26 @@ static esp_err_t stream_handler(httpd_req_t *req){
       //Serial.println("Camera capture failed");
       res = ESP_FAIL;
     } else {
-      if(fb->format != PIXFORMAT_JPEG){
+      if (fb->format != PIXFORMAT_JPEG) {
+        if (qrCodeQueue) {
+          camera_fb_t *fb_to_send = (camera_fb_t*) ps_malloc(sizeof(camera_fb_t));
+          fb_to_send->width = fb->width;
+          fb_to_send->height = fb->height;
+          fb_to_send->format = fb->format;
+          fb_to_send->len = fb->len;
+          fb_to_send->buf = (uint8_t*) ps_malloc(sizeof(uint8_t) * fb_to_send->len);
+          memcpy(fb_to_send->buf, fb->buf, fb_to_send->len);
+          if (!xQueueSend(qrCodeQueue, &fb_to_send, (TickType_t)0))
+          {
+            free(fb_to_send->buf);
+            free(fb_to_send);
+          }
+        }
+
         bool jpeg_converted = frame2jpg(fb, 80, &_jpg_buf, &_jpg_buf_len);
         esp_camera_fb_return(fb);
         fb = NULL;
-        if(!jpeg_converted){
+        if (!jpeg_converted) {
           //Serial.println("JPEG compression failed");
           res = ESP_FAIL;
         }
@@ -101,49 +116,36 @@ static esp_err_t stream_handler(httpd_req_t *req){
         _jpg_buf_len = fb->len;
         _jpg_buf = fb->buf;
       }
-      if (qrCodeQueue) {
-        camera_fb_t *fb_to_send = (camera_fb_t*) ps_malloc(sizeof(*fb_to_send));
-        fb_to_send->width = fb->width;
-        fb_to_send->height = fb->height;
-        fb_to_send->format = fb->format;
-        fb_to_send->len = fb->len;
-        fb_to_send->buf = (uint8_t*) ps_malloc(sizeof(uint8_t) * fb_to_send->len);
-        memcpy(fb_to_send->buf, fb->buf, fb_to_send->len);
-        if (!xQueueSend(qrCodeQueue, &fb_to_send, (TickType_t)0))
-        {
-          free(fb->buf);
-          free(fb);
-        }
-      }
+
     }
-    if(res == ESP_OK){
+    if (res == ESP_OK) {
       res = httpd_resp_send_chunk(req, _STREAM_BOUNDARY, strlen(_STREAM_BOUNDARY));
     }
-    if(res == ESP_OK){
+    if (res == ESP_OK) {
       size_t hlen = snprintf((char *)part_buf, 64, _STREAM_PART, _jpg_buf_len);
       res = httpd_resp_send_chunk(req, (const char *)part_buf, hlen);
     }
-    if(res == ESP_OK){
+    if (res == ESP_OK) {
       res = httpd_resp_send_chunk(req, (const char *)_jpg_buf, _jpg_buf_len);
     }
-    if(fb){
+    if (fb) {
       esp_camera_fb_return(fb);
       fb = NULL;
       _jpg_buf = NULL;
-    } else if(_jpg_buf){
+    } else if (_jpg_buf) {
       free(_jpg_buf);
       _jpg_buf = NULL;
     }
-    if(res != ESP_OK){
+    if (res != ESP_OK) {
       break;
     }
   }
 
-  digitalWrite(4,LOW);
+  digitalWrite(4, LOW);
   return res;
 }
 
-void startCameraServer(QueueHandle_t codeQueue){
+void startCameraServer(QueueHandle_t codeQueue) {
   qrCodeQueue = codeQueue;
   httpd_config_t config = HTTPD_DEFAULT_CONFIG();
 
@@ -172,7 +174,7 @@ void startCameraServer(QueueHandle_t codeQueue){
   }
 }
 
-void stopCameraServer(){
+void stopCameraServer() {
   if (stream_httpd != NULL) {
     httpd_stop(stream_httpd);
     stream_httpd = NULL;
