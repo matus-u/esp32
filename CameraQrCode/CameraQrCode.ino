@@ -38,11 +38,11 @@ bool checkCheckSum(const String &cmd)
   if (cmd.length()<=2)
     return false;
 
-  String checkSum = cmd.substring(cmd.length() -2);
+  String checkSum = cmd.substring(cmd.length() -3, cmd.length() -1);
   if (checkSum == "SS")
     return true;
 
-  return countCheckSumAsString(cmd.substring(0, cmd.length() - 2)) == checkSum;
+  return countCheckSumAsString(cmd.substring(0, cmd.length() - 3)) == checkSum;
 }
 
 bool checkAddress(String addrs)
@@ -58,7 +58,7 @@ bool setAddress(const String &restValue)
   if (restValue.length() <= 4)
     return false;
 
-  String stringAddress = restValue.substring(2, restValue.length()-2);
+  String stringAddress = restValue.substring(2, restValue.length()-3);
 
   int a = stringAddress.toInt();
   if (a == 0)
