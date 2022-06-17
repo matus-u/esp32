@@ -204,6 +204,9 @@ bool wifiCommands(const String& addr1, const String& addr2, const String& rest) 
       startCameraServer(qrCodeQueue);
       delay(100);
       wifi_enabled = 1;
+      preferences.putString("wifissid", ssid);
+      preferences.putString("wifipass", password);
+      preferences.putInt("progcode", progNum);
       serialPrint("@" + addr2 + addr1 + "OK");
     }
   } else if (rest.startsWith("WIOFF")) {
@@ -211,7 +214,12 @@ bool wifiCommands(const String& addr1, const String& addr2, const String& rest) 
       stopCameraServer();
       wifiDisconnect();
     }
+    preferences.putString("wifissid", "");
+    preferences.putString("wifipass", "");
+    preferences.putInt("progcode", 0);
+    
     serialPrint("@" + addr2 + addr1 + "OK");
+
     wifi_enabled = 0;
   } else if (rest.startsWith("WSTAT?")) {
     if (wifi_enabled == 1) {
@@ -295,7 +303,8 @@ void setup()
 
   preferences.begin("qr-app", false);
   address485 = preferences.getInt("485address", 0x30);
-
+  progNum = preferences.getInt("progcode", 0);
+  
   if (!psramFound())
   {
     Serial.println("No psram");
@@ -307,6 +316,14 @@ void setup()
 
   while ((progNum != 1) && (progNum !=2))
     cmdProtocolFunc(loopProgSelection);
+    
+  String defaultSsid = preferences.getString("wifissid", "");
+  String defaultPass = preferences.getString("wifipass", "");
+  if ((defaultSsid != "") && wifiConnect(defaultSsid, defaultPass)) {
+      startCameraServer(qrCodeQueue);
+      delay(100);
+      wifi_enabled = 1;
+  }
 }
 
 void loop()
