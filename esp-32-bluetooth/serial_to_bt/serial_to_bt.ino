@@ -10,6 +10,7 @@
 #endif
 
 BluetoothSerial SerialBT;
+long lastDiscoverableTime = -1;
 
 String countCheckSumAsString(const String& str)
 {
@@ -40,11 +41,13 @@ bool checkCheckSum(const String &cmd)
   return countCheckSumAsString(cmd.substring(0, cmd.length() - 3)) == checkSum;
 }
 
-bool checkAddress(String addrs)
+bool checkAddress(String myAddr, String clientAddr)
 {
-  addrs.toLowerCase();
-  if (addrs == "fe")
+  clientAddr.toLowerCase();
+  myAddr.toLowerCase();
+  if (myAddr == "30" && clientAddr == "00")
     return true;
+  return false;
 }
 
 void serialPrint(String data){
@@ -52,16 +55,13 @@ void serialPrint(String data){
 }
 
 
-bool handleBtDisc(const String& addr1, const String& addr2, const String& rest) {
-
-  //TODO UPDATE address and cmd
-  if (rest.startsWith("BTUDIS")) {
-   SerialBT.setUndiscoverable();
-   return true;
-  }
-
-  if (rest.startsWith("BTDISC")) {
+bool handleBtDisc(const String& addr1, const String& addr2, const String& rest)
+{
+  if (rest.startsWith("Q")) {
+   lastDiscoverableTime = millis();
    SerialBT.setDiscoverable();
+   serialPrint("@" + addr2 + addr1 + "OK");
+   
    return true;
   }
   return false;
@@ -71,17 +71,15 @@ String readPin() {
   String pin = "";
   while (pin == "") {
     delay(20);
-    //TODO UPDATE address and cmd
-    serialPrint("@feabGIVE_PIN");
+    serialPrint("@0030W?");
     String code = Serial.readStringUntil('\n');
-    //TODO UPDATE length
-    if ((code.length() == 20) && (code.startsWith(""))) {
+
+    if ((code.length() >= 15) && (code.startsWith("@3000W="))) {
       if (!checkCheckSum(code)) 
       {
-        serialPrint("@feabERR-CHECKSUM");
+        serialPrint("@0030ERR-CHECKSUM");
       } else {
-        // todo substring
-        pin = "123456";
+        pin = code.substring(7,13);
       }
     }
   }
@@ -102,7 +100,7 @@ void cmdProtocolFunc() {
 
     String rest = code.substring(5);
 
-    if (!checkAddress(addr2)) 
+    if (!checkAddress(addr1, addr2)) 
     {
       SerialBT.write(reinterpret_cast<const unsigned char *>(code.c_str()), code.length());
       SerialBT.write('\n');
@@ -118,12 +116,24 @@ void setup() {
   Serial.begin(9600);
 
   String pin = readPin();
+  serialPrint("PIN=" + pin);
   SerialBT.begin("ESP32"); //Bluetooth device name
   SerialBT.setPin(pin.c_str());
   SerialBT.setUndiscoverable();
 }
 
+long count = 1;
+
 void loop() {
+
+  count++;
+  
+  if (((lastDiscoverableTime > 0) && (lastDiscoverableTime + 120000 < millis())) || (lastDiscoverableTime < 0 && ((count % 500) == 0))) {
+    lastDiscoverableTime = -1;
+    serialPrint("SETTING UNDISCOVERABLE");
+    SerialBT.setUndiscoverable();
+  }
+
 
   if (Serial.available()) {
     cmdProtocolFunc();
