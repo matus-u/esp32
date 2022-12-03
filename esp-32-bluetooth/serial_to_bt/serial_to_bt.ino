@@ -9,7 +9,9 @@
 #error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
 #endif
 
+
 BluetoothSerial SerialBT;
+
 long lastDiscoverableTime = -1;
 
 String countCheckSumAsString(const String& str)
@@ -116,7 +118,6 @@ void setup() {
   Serial.begin(9600);
 
   String pin = readPin();
-  serialPrint("PIN=" + pin);
   SerialBT.begin("ESP32"); //Bluetooth device name
   SerialBT.setPin(pin.c_str());
   SerialBT.setUndiscoverable();
@@ -130,7 +131,6 @@ void loop() {
   
   if (((lastDiscoverableTime > 0) && (lastDiscoverableTime + 120000 < millis())) || (lastDiscoverableTime < 0 && ((count % 500) == 0))) {
     lastDiscoverableTime = -1;
-    serialPrint("SETTING UNDISCOVERABLE");
     SerialBT.setUndiscoverable();
   }
 

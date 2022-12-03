@@ -359,6 +359,66 @@ static void esp_spp_cb(esp_spp_cb_event_t event, esp_spp_cb_param_t *param)
     if(custom_spp_callback)(*custom_spp_callback)(event, param);
 }
 
+
+#define PAIR_MAX_DEVICES 20
+
+char bda_str[18];
+
+char *bda2str(const uint8_t* bda, char *str, size_t size)
+{
+  if (bda == NULL || str == NULL || size < 18) {
+    return NULL;
+  }
+  sprintf(str, "%02x:%02x:%02x:%02x:%02x:%02x",
+          bda[0], bda[1], bda[2], bda[3], bda[4], bda[5]);
+  return str;
+}
+
+bool isSame(esp_bd_addr_t connectedAddr, esp_bd_addr_t pairedAddr)
+{
+  for(int i = 0; i < 6; i++)
+  {
+    if (connectedAddr[i] != pairedAddr[i])
+       return false;
+  }
+  return true;
+}
+
+void removeOldPairedDevicesOnNewAuth(boolean success, esp_bd_addr_t connectedAddr)
+{
+  uint8_t pairedDeviceBtAddr[PAIR_MAX_DEVICES][6];
+  if(success)
+  {
+    int count = esp_bt_gap_get_bond_device_num();
+    if(!count) {
+      //Serial.println("No bonded device found.");
+      ;
+    } else {
+    //Serial.print("Bonded device count: "); Serial.println(count);
+    if(PAIR_MAX_DEVICES < count) {
+     count = PAIR_MAX_DEVICES; 
+    }
+    esp_err_t tError =  esp_bt_gap_get_bond_device_list(&count, pairedDeviceBtAddr);
+    if(ESP_OK == tError) {
+      for(int i = 0; i < count; i++) {
+        //Serial.print("Found bonded device # "); Serial.print(i); Serial.print(" -> ");
+        //Serial.println(bda2str(pairedDeviceBtAddr[i], bda_str, 18));     
+        if(!isSame(connectedAddr, pairedDeviceBtAddr[i])) {
+          esp_err_t tError = esp_bt_gap_remove_bond_device(pairedDeviceBtAddr[i]);
+          if(ESP_OK == tError) {
+            //Serial.print("Removed bonded device # "); 
+          } else {
+            //Serial.print("Failed to remove bonded device # ");
+          }
+          //Serial.println(i);
+        }
+      }        
+    }
+  }
+    
+  }
+}
+
 void BluetoothSerial::onData(BluetoothSerialDataCb cb){
     custom_data_callback = cb;
 }
@@ -435,13 +495,14 @@ static void esp_bt_gap_cb(esp_bt_gap_cb_event_t event, esp_bt_gap_cb_param_t *pa
         case ESP_BT_GAP_AUTH_CMPL_EVT:
             if (param->auth_cmpl.stat == ESP_BT_STATUS_SUCCESS) {
                 log_v("authentication success: %s", param->auth_cmpl.device_name);
+                removeOldPairedDevicesOnNewAuth(true, param->auth_cmpl.bda);
                 if (auth_complete_callback) {
-                    auth_complete_callback(true);
+                    auth_complete_callback(true, param->auth_cmpl.bda);
                 }
             } else {
                 log_e("authentication failed, status:%d", param->auth_cmpl.stat);
                 if (auth_complete_callback) {
-                    auth_complete_callback(false);
+                    auth_complete_callback(false, NULL);
                 }
             }
             break;
@@ -644,6 +705,7 @@ static bool waitForConnect(int timeout) {
  * Serial Bluetooth Arduino
  *
  * */
+
 
 BluetoothSerial::BluetoothSerial()
 {
@@ -880,5 +942,8 @@ void BluetoothSerial::setUndiscoverable() {
     discoverable_mode = ESP_BT_SCAN_MODE_CONNECTABLE;
     esp_bt_gap_set_scan_mode(discoverable_mode);
 }
+
+
+
 
 #endif

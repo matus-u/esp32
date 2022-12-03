@@ -22,11 +22,12 @@
 #include "Arduino.h"
 #include "Stream.h"
 #include <esp_spp_api.h>
+#include <esp_bt_defs.h>
 #include <functional>
 
 typedef std::function<void(const uint8_t *buffer, size_t size)> BluetoothSerialDataCb;
 typedef std::function<void(uint32_t num_val)> ConfirmRequestCb;
-typedef std::function<void(boolean success)> AuthCompleteCb;
+typedef std::function<void(boolean success, esp_bd_addr_t connectedAddr)> AuthCompleteCb;
 
 class BluetoothSerial: public Stream
 {
