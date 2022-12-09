@@ -14,75 +14,27 @@ BluetoothSerial SerialBT;
 
 long lastDiscoverableTime = -1;
 
-String countCheckSumAsString(const String& str)
-{
-  int sum = 0;
-  for (int i = 0; i< str.length(); i++)
-  {
-    sum+= (int) str.charAt(i);
-  }
-  sum = sum % 256;
-  char buf [3];
-  sprintf(buf, "%02X", sum);
-  String countedStrChecksum;
-  countedStrChecksum += buf[0];
-  countedStrChecksum += buf[1];
-  return countedStrChecksum;
+void serialPrint(String data) {
+  Serial.println(data);
 }
 
 
-bool checkCheckSum(const String &cmd)
+void handleBtDisc()
 {
-  if (cmd.length()<=2)
-    return false;
-
-  String checkSum = cmd.substring(cmd.length() -3, cmd.length() -1);
-  if (checkSum == "SS")
-    return true;
-
-  return countCheckSumAsString(cmd.substring(0, cmd.length() - 3)) == checkSum;
-}
-
-bool checkAddress(String myAddr, String clientAddr)
-{
-  clientAddr.toLowerCase();
-  myAddr.toLowerCase();
-  if (myAddr == "30" && clientAddr == "00")
-    return true;
-  return false;
-}
-
-void serialPrint(String data){
-  Serial.println(data+countCheckSumAsString(data));
-}
-
-
-bool handleBtDisc(const String& addr1, const String& addr2, const String& rest)
-{
-  if (rest.startsWith("Q")) {
    lastDiscoverableTime = millis();
    SerialBT.setDiscoverable();
-   serialPrint("@" + addr2 + addr1 + "OK");
-   
-   return true;
-  }
-  return false;
+   digitalWrite(16, HIGH);
 }
 
 String readPin() {
   String pin = "";
   while (pin == "") {
     delay(20);
-    serialPrint("@0030W?");
+    serialPrint("@W?");
     String code = Serial.readStringUntil('\n');
 
-    if ((code.length() >= 15) && (code.startsWith("@3000W="))) {
-      if (!checkCheckSum(code)) 
-      {
-        serialPrint("@0030ERR-CHECKSUM");
-      } else {
-        pin = code.substring(7,13);
-      }
+    if ((code.length() >= 9) && (code.startsWith("@W="))) {
+        pin = code.substring(3,9);
     }
   }
   return pin;
@@ -90,26 +42,11 @@ String readPin() {
 
 void cmdProtocolFunc() {
   String code = Serial.readStringUntil('\n');
-  if (code.startsWith("@")) {
-    String addr1 = code.substring(1,3);
-    String addr2 = code.substring(3,5);
-
-    if (!checkCheckSum(code)) 
-    {
-      serialPrint("@" + addr2 + addr1 + "ERR-CHECKSUM");
-      return;
-    }
-
-    String rest = code.substring(5);
-
-    if (!checkAddress(addr1, addr2)) 
-    {
-      SerialBT.write(reinterpret_cast<const unsigned char *>(code.c_str()), code.length());
-      SerialBT.write('\n');
-      return;
-    }
-
-    handleBtDisc(addr1, addr2, rest);
+  if (code.startsWith("@Q")) {
+    handleBtDisc();
+  } else {
+    SerialBT.write(reinterpret_cast<const unsigned char *>(code.c_str()), code.length());
+    SerialBT.write('\n');
   }
 }
 
@@ -117,6 +54,8 @@ void setup() {
 
   Serial.begin(9600);
 
+  pinMode(16, OUTPUT);
+  digitalWrite(16, HIGH);
   String pin = readPin();
   SerialBT.begin("ESP32"); //Bluetooth device name
   SerialBT.setPin(pin.c_str());
@@ -127,11 +66,14 @@ long count = 1;
 
 void loop() {
 
+  digitalWrite(16, LOW);
   count++;
   
-  if (((lastDiscoverableTime > 0) && (lastDiscoverableTime + 120000 < millis())) || (lastDiscoverableTime < 0 && ((count % 500) == 0))) {
+  if (((lastDiscoverableTime > 0) && (lastDiscoverableTime + 120000 < millis())) || (lastDiscoverableTime < 0 && ((count % 1000) == 0))) {
     lastDiscoverableTime = -1;
     SerialBT.setUndiscoverable();
+    digitalWrite(16, HIGH);
+    count = 1;
   }
 
 
@@ -141,5 +83,5 @@ void loop() {
   if (SerialBT.available()) {
     Serial.write(SerialBT.read());
   }
-  delay(20);
+  delay(10);
 }
