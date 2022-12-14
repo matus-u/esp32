@@ -23,27 +23,38 @@ void handleBtDisc()
 {
    lastDiscoverableTime = millis();
    SerialBT.setDiscoverable();
-   digitalWrite(16, HIGH);
+   //digitalWrite(16, HIGH);
 }
 
-String readPin() {
+void initializeBluetooth() {
   String pin = "";
-  while (pin == "") {
+  String blName = "";
+  while (pin == "" || blName == "") {
     delay(20);
     serialPrint("@W?");
     String code = Serial.readStringUntil('\n');
 
-    if ((code.length() >= 9) && (code.startsWith("@W="))) {
-        pin = code.substring(3,9);
+    if ((code.length() > 5) && (code.startsWith("@W="))) {
+        int firstIndex = code.indexOf(",");
+        int lastIndex = code.lastIndexOf(",");
+        if ((firstIndex > 3) && (firstIndex < lastIndex)) {
+          blName = code.substring(3,firstIndex);
+          pin = code.substring(firstIndex+1, lastIndex);
+        }
+
     }
   }
-  return pin;
+  
+  SerialBT.begin(blName.c_str()); //Bluetooth device name
+  SerialBT.setPin(pin.c_str());
 }
 
 void cmdProtocolFunc() {
   String code = Serial.readStringUntil('\n');
-  if (code.startsWith("@Q")) {
+  if (code.startsWith("@Q0")) {
     handleBtDisc();
+  } else if (code.startsWith("@Q0")) {
+    ESP.restart();
   } else {
     SerialBT.write(reinterpret_cast<const unsigned char *>(code.c_str()), code.length());
     SerialBT.write('\n');
@@ -54,25 +65,36 @@ void setup() {
 
   Serial.begin(9600);
 
-  pinMode(16, OUTPUT);
-  digitalWrite(16, HIGH);
-  String pin = readPin();
-  SerialBT.begin("ESP32"); //Bluetooth device name
-  SerialBT.setPin(pin.c_str());
+  pinMode(2, OUTPUT);
+  digitalWrite(2, HIGH);
+  initializeBluetooth();
+
   SerialBT.setUndiscoverable();
 }
 
 long count = 1;
+long delayCount = 0;
 
 void loop() {
 
-  digitalWrite(16, LOW);
+  //digitalWrite(2, LOW);
+  delayCount++;
+  if (delayCount == 100)
+  {
+    digitalWrite(2,LOW);
+  }
+  if( delayCount == 200)
+  {
+    digitalWrite(2,HIGH);
+    delayCount = 0;
+  }
+  
   count++;
   
-  if (((lastDiscoverableTime > 0) && (lastDiscoverableTime + 120000 < millis())) || (lastDiscoverableTime < 0 && ((count % 1000) == 0))) {
+  if (((lastDiscoverableTime > 0) && (lastDiscoverableTime + 120000 < millis())) || (lastDiscoverableTime < 0 && ((count % 10000) == 0))) {
     lastDiscoverableTime = -1;
     SerialBT.setUndiscoverable();
-    digitalWrite(16, HIGH);
+    //digitalWrite(16, HIGH);
     count = 1;
   }
 
@@ -83,5 +105,5 @@ void loop() {
   if (SerialBT.available()) {
     Serial.write(SerialBT.read());
   }
-  delay(10);
+  delay(2);
 }
