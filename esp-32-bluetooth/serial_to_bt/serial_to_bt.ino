@@ -18,12 +18,24 @@ void serialPrint(String data) {
   Serial.println(data);
 }
 
+const int DISCOVERABLE_LOGIC_PIN = 5;
+const int LED_PIN = 2;
 
-void handleBtDisc()
+void setBtUndis()
+{
+  if (digitalRead(DISCOVERABLE_LOGIC_PIN) == LOW)
+  {
+    SerialBT.setUndiscoverable();
+    digitalWrite(LED_PIN, HIGH);
+  }
+}
+void setBtDis()
 {
    lastDiscoverableTime = millis();
-   SerialBT.setDiscoverable();
-   //digitalWrite(16, HIGH);
+   if (digitalRead(DISCOVERABLE_LOGIC_PIN) == LOW) {
+     SerialBT.setDiscoverable();
+     digitalWrite(LED_PIN, LOW);
+   }
 }
 
 void initializeBluetooth() {
@@ -52,8 +64,8 @@ void initializeBluetooth() {
 void cmdProtocolFunc() {
   String code = Serial.readStringUntil('\n');
   if (code.startsWith("@Q0")) {
-    handleBtDisc();
-  } else if (code.startsWith("@Q0")) {
+    setBtDis();
+  } else if (code.startsWith("@Q1")) {
     ESP.restart();
   } else {
     SerialBT.write(reinterpret_cast<const unsigned char *>(code.c_str()), code.length());
@@ -65,36 +77,25 @@ void setup() {
 
   Serial.begin(9600);
 
-  pinMode(2, OUTPUT);
-  digitalWrite(2, HIGH);
+  pinMode(LED_PIN, OUTPUT);
+  pinMode(DISCOVERABLE_LOGIC_PIN, INPUT);
+  
+  digitalWrite(LED_PIN, LOW);
   initializeBluetooth();
 
-  SerialBT.setUndiscoverable();
+  setBtUndis();
+  
 }
 
 long count = 1;
-long delayCount = 0;
 
 void loop() {
-
-  //digitalWrite(2, LOW);
-  delayCount++;
-  if (delayCount == 100)
-  {
-    digitalWrite(2,LOW);
-  }
-  if( delayCount == 200)
-  {
-    digitalWrite(2,HIGH);
-    delayCount = 0;
-  }
   
   count++;
   
-  if (((lastDiscoverableTime > 0) && (lastDiscoverableTime + 120000 < millis())) || (lastDiscoverableTime < 0 && ((count % 10000) == 0))) {
+  if (((lastDiscoverableTime > 0) && (lastDiscoverableTime + 180000 < millis())) || (lastDiscoverableTime < 0 && ((count % 10000) == 0))) {
     lastDiscoverableTime = -1;
-    SerialBT.setUndiscoverable();
-    //digitalWrite(16, HIGH);
+    setBtUndis();
     count = 1;
   }
 
