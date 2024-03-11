@@ -145,8 +145,6 @@ void initializeWifi() {
     IPAddress localIp;
     IPAddress subnet;
     IPAddress gateway;
-    subnet.fromString("255.255.255.0");
-    gateway.fromString("192.168.5.1");
 
     WiFi.disconnect(true, true);
     while (true) {
@@ -156,6 +154,12 @@ void initializeWifi() {
         String response = Serial.readStringUntil('\n');
 
         if (!parseIp(response, localIp))
+            continue;
+
+        if (!parseIp(response, gateway))
+            continue;
+
+        if (!parseIp(response, subnet))
             continue;
 
         if (!parsePort(response))
