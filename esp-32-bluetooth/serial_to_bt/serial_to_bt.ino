@@ -12,7 +12,8 @@
 #include <WiFi.h>
 
 BluetoothSerial SerialBT;
-WiFiServer wifiServer(80);
+WiFiServer *wifiServer;
+int port = 80;
 
 long lastDiscoverableTime = -1;
 
@@ -23,7 +24,7 @@ void serialPrint(String data) {
 }
 
 const int DISCOVERABLE_LOGIC_PIN = 5;
-const int LED_PIN = 2;
+const int LED_PIN = 4;
 
 void setBtUndis()
 {
@@ -42,22 +43,84 @@ void setBtDis()
     }
 }
 
-String parseSSID(const String& msg)
+bool parseSSID(String& msg, String& ssid)
 {
-    int indexOf = msg.indexOf("|");
-    if (indexOf >= 6)
-        return msg.substring(6,indexOf);
-    return "";
+    if (msg.length() > 21) {
+        String ssidStr = msg.substring(0,20);
+        ssid = remove0x80(ssidStr);
+        msg.remove(0,21);
+        if (ssid != "") {
+            return true;
+        }
+    }
+    return false;
 }
 
-String parsePassword(const String& msg)
-{
-    int indexOf = msg.indexOf("|");
-    int lastIndex = msg.lastIndexOf("|");
-    if ((indexOf >= 6) && (indexOf < lastIndex)) {
-        return msg.substring(indexOf+1, lastIndex);
+String remove0x80(String& msg) {
+    int index = msg.indexOf(char(0x80));
+    if (index >= 0) {
+        return msg.substring(0,index);
     }
-    return "";
+    return msg;
+}
+
+String removeFirstPart(String& msg) {
+    String first = "";
+    int index = msg.indexOf(',');
+    if (index >= 0) {
+        first = msg.substring(0,index);
+        msg.remove(0,index+1);
+    }
+    return first;
+}
+
+void remove_zeroes(String& msg) {
+    if (msg[0] == '0' && msg[1] == '0') {
+        msg.remove(0,2);
+    } else {
+        if (msg[0] == '0') {
+            msg.remove(0,1);
+        }
+    }
+}
+
+bool parseIp(String& msg, IPAddress &addr)
+{
+    String first, second, third, fourth = "";
+    first = removeFirstPart(msg);
+    second = removeFirstPart(msg);
+    third = removeFirstPart(msg);
+    fourth = removeFirstPart(msg);
+
+    remove_zeroes(first);
+    remove_zeroes(second);
+    remove_zeroes(third);
+    remove_zeroes(fourth);
+
+    if (first == "" || 
+        second == "" || 
+        third == "" ||
+        fourth == "")
+        return false;
+
+    return addr.fromString(first+ "." + second + "." + third + "."+fourth);
+}
+
+bool parsePort(String& msg)
+{
+    String portStr = removeFirstPart(msg);
+    port = portStr.toInt();
+    return port != 0;
+}
+
+bool parsePassword(String& msg, String &pass)
+{
+    if (msg.length() > 20) {
+        String passStr = msg.substring(0,20);
+        pass = remove0x80(passStr);
+        return true;
+    }
+    return false;
 }
 
 bool wifiConnect(const String& ssid, const String password) {
@@ -74,19 +137,6 @@ bool wifiConnect(const String& ssid, const String password) {
     return true;
 }
 
-bool parseIpSettings(const String& msg, IPAddress &addr)
-{
-    if (msg.length() <= 4)
-        return false;
-
-    int index = code.indexOf(",");
-    if (index == -1)
-        return false;
-    
-    String addr = code.substring(4,index);
-    return addr.fromString(addr);
-}
-
 void initializeWifi() {
 
     String ssid = "";
@@ -95,30 +145,29 @@ void initializeWifi() {
     IPAddress localIp;
     IPAddress subnet;
     IPAddress gateway;
+    subnet.fromString("255.255.255.0");
+    gateway.fromString("192.168.5.1");
 
     WiFi.disconnect(true, true);
     while (true) {
         delay(20);
 
-        serialPrint("@IP?");
-        if (!parseIpSettings(Serial.readStringUntil('\n'), localIp))
+        serialPrint("@S?");
+        String response = Serial.readStringUntil('\n');
+
+        if (!parseIp(response, localIp))
             continue;
 
-        serialPrint("@SB?");
-        if (!parseIpSettings(Serial.readStringUntil('\n'), subnet))
+        if (!parsePort(response))
             continue;
 
-        serialPrint("@GW?");
-        if (!parseIpSettings(Serial.readStringUntil('\n'), gateway))
+        if (!parseSSID(response, ssid))
             continue;
 
-        serialPrint("@WIFI?");
-        code = Serial.readStringUntil('\n');
+        if (!parsePassword(response, password))
+            continue;
 
-        if ((code.length() > 6) && (code.startsWith("@WIFI="))) {
-            String ssid = parseSSID(rest);
-            String password = parsePassword(rest);
-            if ((ssid != "") && WiFi.config(localIp, gateway, subnet) && wifiConnect(ssid, password)
+        if (WiFi.config(localIp, gateway, subnet) && wifiConnect(ssid, password)) {
                 return;
         }
     }
@@ -166,7 +215,7 @@ void cmdProtocolFuncWifi(WiFiClient *client) {
         ESP.restart();
     } 
 
-    if (client && client->connected())
+    if (client && client->connected()) {
         client->write(reinterpret_cast<const unsigned char *>(code.c_str()), code.length());
         client->write('\n');
     }
@@ -189,7 +238,8 @@ void setup() {
     }
     else {
         initializeWifi();
-        wifiServer.begin();
+        wifiServer = new WiFiServer(port);
+        wifiServer->begin();
     }
 
 }
@@ -217,14 +267,14 @@ void loop() {
         delay(2);
     }
     else {
-        WiFiClient client = wifiServer.available();
+        WiFiClient client = wifiServer->available();
 
         if (client) {
 
             while (client.connected()) {
 
                 if (Serial.available()) {
-                    cmdProtocolFuncWifi(client);
+                    cmdProtocolFuncWifi(&client);
                 }
 
                 if (client.available()>0) {
