@@ -17,21 +17,20 @@ int port = 80;
 
 long lastDiscoverableTime = -1;
 
-bool wifiModeEnabled = false;
+bool wifiModeEnabled = true;
 
 void serialPrint(String data) {
     Serial.println(data);
 }
 
 const int DISCOVERABLE_LOGIC_PIN = 5;
-const int LED_PIN = 4;
+const int BT_WIFI_PIN = 4;
 
 void setBtUndis()
 {
     if (digitalRead(DISCOVERABLE_LOGIC_PIN) == LOW)
     {
         SerialBT.setUndiscoverable();
-        digitalWrite(LED_PIN, HIGH);
     }
 }
 void setBtDis()
@@ -39,7 +38,6 @@ void setBtDis()
     lastDiscoverableTime = millis();
     if (digitalRead(DISCOVERABLE_LOGIC_PIN) == LOW) {
         SerialBT.setDiscoverable();
-        digitalWrite(LED_PIN, LOW);
     }
 }
 
@@ -92,10 +90,22 @@ bool parseIp(String& msg, IPAddress &addr)
     third = removeFirstPart(msg);
     fourth = removeFirstPart(msg);
 
+//    serialPrint("Parse Ip after: ");
+//    serialPrint(first);
+//    serialPrint(second);
+//    serialPrint(third);
+//    serialPrint(fourth);
+
     remove_zeroes(first);
     remove_zeroes(second);
     remove_zeroes(third);
     remove_zeroes(fourth);
+    
+//    serialPrint("Parse Ip after zeroes: ");
+//    serialPrint(first);
+//    serialPrint(second);
+//    serialPrint(third);
+//    serialPrint(fourth);
 
     if (first == "" || 
         second == "" || 
@@ -145,35 +155,66 @@ void initializeWifi() {
     IPAddress localIp;
     IPAddress subnet;
     IPAddress gateway;
-
+    WiFi.mode(WIFI_STA);
     WiFi.disconnect(true, true);
     while (true) {
         delay(20);
 
         serialPrint("@S?");
         String response = Serial.readStringUntil('\n');
+        if (!response.startsWith("@S=")) {
+//          serialPrint("unexpected response:");
+//          serialPrint(response);
+          continue;
+        }
 
-        if (!parseIp(response, localIp))
+        response.remove(0,3);
+
+        if (!parseIp(response, localIp)) {
+//            serialPrint("CANNOT PARSE IP");
             continue;
+        }
 
-        if (!parseIp(response, gateway))
+        if (!parseIp(response, gateway)) {
+//            serialPrint("CANNOT PARSE GATEWAY");
             continue;
+        }
 
-        if (!parseIp(response, subnet))
+        if (!parseIp(response, subnet)) {
+//            serialPrint("CANNOT PARSE SUBNET");
             continue;
+        }
 
-        if (!parsePort(response))
+        if (!parsePort(response)){
+//            serialPrint("CANNOT PARSE PORT");
             continue;
+        }
 
-        if (!parseSSID(response, ssid))
+        if (!parseSSID(response, ssid)) {
+//            serialPrint("CANNOT PARSE SSID");
             continue;
+        }
 
-        if (!parsePassword(response, password))
+        if (!parsePassword(response, password)){
+//            serialPrint("CANNOT PARSE PASSWORD");
             continue;
+        }
+        
+        if (!WiFi.config(localIp, gateway, subnet)){
+//           serialPrint("CANNOT SETUP WIFI");
+//           serialPrint(localIp.toString());
+//           serialPrint(subnet.toString());
+//           serialPrint(gateway.toString());
+           continue;
 
-        if (WiFi.config(localIp, gateway, subnet) && wifiConnect(ssid, password)) {
+        }
+        if (wifiConnect(ssid, password)) {
                 return;
         }
+//        serialPrint("CANNOT CONNECT TO WIFI");
+//        serialPrint(ssid);
+//        serialPrint(password);
+//        serialPrint(String(WiFi.status()));
     }
 
 }
@@ -229,13 +270,13 @@ void setup() {
 
     Serial.begin(9600);
 
-    pinMode(LED_PIN, OUTPUT);
+    pinMode(BT_WIFI_PIN, INPUT);
+    wifiModeEnabled = !digitalRead(BT_WIFI_PIN);
 
     if (!wifiModeEnabled)
     {
         pinMode(DISCOVERABLE_LOGIC_PIN, INPUT);
 
-        digitalWrite(LED_PIN, LOW);
         initializeBluetooth();
 
         setBtUndis();
