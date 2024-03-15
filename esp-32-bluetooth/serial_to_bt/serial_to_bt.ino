@@ -157,8 +157,14 @@ void initializeWifi() {
     IPAddress gateway;
     WiFi.mode(WIFI_STA);
     WiFi.disconnect(true, true);
+    bool first = true;
     while (true) {
-        delay(20);
+
+        if (!first) {
+            delay(20000);
+        }
+
+        first = false;
 
         serialPrint("@S?");
         String response = Serial.readStringUntil('\n');
@@ -310,8 +316,7 @@ void loop() {
             Serial.write(SerialBT.read());
         }
         delay(2);
-    }
-    else {
+    } else {
         WiFiClient client = wifiServer->available();
 
         if (client) {
