@@ -158,6 +158,7 @@ void initializeWifi() {
     WiFi.mode(WIFI_STA);
     WiFi.disconnect(true, true);
     bool first = true;
+    delay(3000);
     while (true) {
 
         if (!first) {
