@@ -3,7 +3,7 @@
 //
 //This example creates a bridge between Serial and Classical Bluetooth (SPP)
 //and also demonstrate that SerialBT have the same functionalities of a normal Serial
-#include "MyBluetoothSerial.h"
+#include <Preferences.h>
 
 #if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
 #error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
@@ -11,35 +11,15 @@
 
 #include <WiFi.h>
 
-BluetoothSerial SerialBT;
 WiFiServer *wifiServer;
-int port = 80;
+int port = 8000;
 
-long lastDiscoverableTime = -1;
-
-bool wifiModeEnabled = true;
+Preferences preferences;
 
 void serialPrint(String data) {
     Serial.println(data);
 }
 
-const int DISCOVERABLE_LOGIC_PIN = 5;
-const int BT_WIFI_PIN = 4;
-
-void setBtUndis()
-{
-    if (digitalRead(DISCOVERABLE_LOGIC_PIN) == LOW)
-    {
-        SerialBT.setUndiscoverable();
-    }
-}
-void setBtDis()
-{
-    lastDiscoverableTime = millis();
-    if (digitalRead(DISCOVERABLE_LOGIC_PIN) == LOW) {
-        SerialBT.setDiscoverable();
-    }
-}
 
 bool parseSSID(String& msg, String& ssid)
 {
@@ -159,6 +139,8 @@ void initializeWifi() {
     WiFi.disconnect(true, true);
     bool first = true;
     delay(3000);
+
+    preferences.begin("wifi-app", false);
     while (true) {
 
         if (!first) {
@@ -168,43 +150,81 @@ void initializeWifi() {
         first = false;
 
         serialPrint("@S?");
+        bool parseResponse = true;
         String response = Serial.readStringUntil('\n');
         if (!response.startsWith("@S=")) {
+            parseResponse = false;
 //          serialPrint("unexpected response:");
 //          serialPrint(response);
-          continue;
         }
 
-        response.remove(0,3);
 
-        if (!parseIp(response, localIp)) {
+        if (parseResponse) {
+            response.remove(0,3);
+        }
+
+        if (parseResponse && !parseIp(response, localIp)) {
 //            serialPrint("CANNOT PARSE IP");
-            continue;
+            parseResponse = false;
         }
 
-        if (!parseIp(response, gateway)) {
+        if (parseResponse && !parseIp(response, gateway)) {
 //            serialPrint("CANNOT PARSE GATEWAY");
-            continue;
+            parseResponse = false;
         }
 
-        if (!parseIp(response, subnet)) {
+        if (parseResponse && !parseIp(response, subnet)) {
 //            serialPrint("CANNOT PARSE SUBNET");
-            continue;
+            parseResponse = false;
         }
 
-        if (!parsePort(response)){
+        if (parseResponse && !parsePort(response)){
 //            serialPrint("CANNOT PARSE PORT");
-            continue;
+            parseResponse = false;
         }
 
-        if (!parseSSID(response, ssid)) {
+        if (parseResponse && !parseSSID(response, ssid)) {
 //            serialPrint("CANNOT PARSE SSID");
-            continue;
+            parseResponse = false;
         }
 
-        if (!parsePassword(response, password)){
+        if (parseResponse && !parsePassword(response, password)){
 //            serialPrint("CANNOT PARSE PASSWORD");
-            continue;
+            parseResponse = false;
+        }
+
+        if (!parseResponse) {
+            if (!localIp.fromString(preferences.getString("localip", ""))){
+                continue;
+            }
+
+            if (!subnet.fromString(preferences.getString("subnet", ""))){
+                continue;
+            }
+
+            if (!gateway.fromString(preferences.getString("gateway", ""))){
+                continue;
+            }
+
+            ssid = preferences.getString("ssid", "");
+            password = preferences.getString("password", "");
+            port = preferences.getInt("port", 0);
+
+            if ((ssid == "") || (port == 0)) {
+                continue;
+            }
+
+        } else {
+            preferences.putString("localip", localIp.toString());
+            preferences.putString("subnet", subnet.toString());
+            preferences.putString("gateway", gateway.toString());
+            preferences.putString("ssid", ssid);
+            preferences.putString("password", password);
+            preferences.putInt("port", port);
+            preferences.end();
+            serialPrint("Settings correctly saved -> restart in 30s...");
+            delay(30000);
+            ESP.restart();
         }
         
         if (!WiFi.config(localIp, gateway, subnet)){
@@ -216,7 +236,8 @@ void initializeWifi() {
 
         }
         if (wifiConnect(ssid, password)) {
-                return;
+            preferences.end();
+            return;
         }
 //        serialPrint("CANNOT CONNECT TO WIFI");
 //        serialPrint(ssid);
@@ -224,41 +245,6 @@ void initializeWifi() {
 //        serialPrint(String(WiFi.status()));
     }
 
-}
-
-void initializeBluetooth() {
-    String pin = "";
-    String blName = "";
-    while (pin == "" || blName == "") {
-        delay(20);
-        serialPrint("@W?");
-        String code = Serial.readStringUntil('\n');
-
-        if ((code.length() > 5) && (code.startsWith("@W="))) {
-            int firstIndex = code.indexOf(",");
-            int lastIndex = code.lastIndexOf(",");
-            if ((firstIndex > 3) && (firstIndex < lastIndex)) {
-                blName = code.substring(3,firstIndex);
-                pin = code.substring(firstIndex+1, lastIndex);
-            }
-
-        }
-    }
-
-    SerialBT.begin(blName.c_str()); //Bluetooth device name
-    SerialBT.setPin(pin.c_str());
-}
-
-void cmdProtocolFunc() {
-    String code = Serial.readStringUntil('\n');
-    if (code.startsWith("@Q0")) {
-        setBtDis();
-    } else if (code.startsWith("@Q1")) {
-        ESP.restart();
-    } else {
-        SerialBT.write(reinterpret_cast<const unsigned char *>(code.c_str()), code.length());
-        SerialBT.write('\n');
-    }
 }
 
 void cmdProtocolFuncWifi(WiFiClient *client) {
@@ -277,22 +263,9 @@ void setup() {
 
     Serial.begin(9600);
 
-    pinMode(BT_WIFI_PIN, INPUT);
-    wifiModeEnabled = !digitalRead(BT_WIFI_PIN);
-
-    if (!wifiModeEnabled)
-    {
-        pinMode(DISCOVERABLE_LOGIC_PIN, INPUT);
-
-        initializeBluetooth();
-
-        setBtUndis();
-    }
-    else {
-        initializeWifi();
-        wifiServer = new WiFiServer(port);
-        wifiServer->begin();
-    }
+    initializeWifi();
+    wifiServer = new WiFiServer(port);
+    wifiServer->begin();
 
 }
 
@@ -300,49 +273,30 @@ long count = 1;
 
 void loop() {
 
-    if (!wifiModeEnabled)
-    {
-        count++;
+    WiFiClient client = wifiServer->available();
 
-        if (((lastDiscoverableTime > 0) && (lastDiscoverableTime + 180000 < millis())) || (lastDiscoverableTime < 0 && ((count % 10000) == 0))) {
-            lastDiscoverableTime = -1;
-            setBtUndis();
-            count = 1;
-        }
+    if (client) {
 
-        if (Serial.available()) {
-            cmdProtocolFunc();
-        }
-        if (SerialBT.available()) {
-            Serial.write(SerialBT.read());
-        }
-        delay(2);
-    } else {
-        WiFiClient client = wifiServer->available();
+        while (client.connected()) {
 
-        if (client) {
-
-            while (client.connected()) {
-
-                if (Serial.available()) {
-                    cmdProtocolFuncWifi(&client);
-                }
-
-                if (client.available()>0) {
-                    Serial.write(client.read());
-                }
-
-                delay(2);
-            }
-
-            client.stop();
-            Serial.println("Client disconnected");
-
-        } else {
             if (Serial.available()) {
-                cmdProtocolFuncWifi(NULL);
+                cmdProtocolFuncWifi(&client);
             }
+
+            if (client.available()>0) {
+                Serial.write(client.read());
+            }
+
+            delay(2);
         }
-        delay(2);
+
+        client.stop();
+        Serial.println("Client disconnected");
+
+    } else {
+        if (Serial.available()) {
+            cmdProtocolFuncWifi(NULL);
+        }
     }
+    delay(2);
 }
