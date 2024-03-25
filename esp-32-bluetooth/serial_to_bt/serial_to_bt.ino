@@ -215,6 +215,7 @@ void initializeWifi() {
             }
 
         } else {
+            serialPrint("@OK");
             preferences.putString("localip", localIp.toString());
             preferences.putString("subnet", subnet.toString());
             preferences.putString("gateway", gateway.toString());
