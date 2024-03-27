@@ -274,6 +274,11 @@ long count = 1;
 
 void loop() {
 
+    if (WiFi.status() != WL_CONNECTED) {
+        delay(5000);
+        ESP.restart();
+    }
+
     WiFiClient client = wifiServer->available();
 
     if (client) {
@@ -299,5 +304,5 @@ void loop() {
             cmdProtocolFuncWifi(NULL);
         }
     }
-    delay(2);
+    delay(10);
 }
