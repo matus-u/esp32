@@ -1,4 +1,4 @@
-//This example code is in the Public Domain (or CC0 licensed, at your option.)
+//This examtple code is in the Public Domain (or CC0 licensed, at your option.)
 //By Evandro Copercini - 2018
 //
 //This example creates a bridge between Serial and Classical Bluetooth (SPP)
@@ -10,6 +10,7 @@
 #endif
 
 #include <WiFi.h>
+#include <WiFiProvisioner.h>
 
 WiFiServer *wifiServer;
 int port = 8000;
@@ -127,127 +128,6 @@ bool wifiConnect(const String& ssid, const String password) {
     return true;
 }
 
-void initializeWifi() {
-
-    String ssid = "";
-    String password = "";
-
-    IPAddress localIp;
-    IPAddress subnet;
-    IPAddress gateway;
-    WiFi.mode(WIFI_STA);
-    WiFi.disconnect(true, true);
-    bool first = true;
-    delay(3000);
-
-    preferences.begin("wifi-app", false);
-    while (true) {
-
-        if (!first) {
-            delay(20000);
-        }
-
-        first = false;
-
-        serialPrint("@S?");
-        bool parseResponse = true;
-        String response = Serial.readStringUntil('\n');
-        if (!response.startsWith("@S=")) {
-            parseResponse = false;
-//          serialPrint("unexpected response:");
-//          serialPrint(response);
-        }
-
-
-        if (parseResponse) {
-            response.remove(0,3);
-        }
-
-        if (parseResponse && !parseIp(response, localIp)) {
-//            serialPrint("CANNOT PARSE IP");
-            parseResponse = false;
-        }
-
-        if (parseResponse && !parseIp(response, gateway)) {
-//            serialPrint("CANNOT PARSE GATEWAY");
-            parseResponse = false;
-        }
-
-        if (parseResponse && !parseIp(response, subnet)) {
-//            serialPrint("CANNOT PARSE SUBNET");
-            parseResponse = false;
-        }
-
-        if (parseResponse && !parsePort(response)){
-//            serialPrint("CANNOT PARSE PORT");
-            parseResponse = false;
-        }
-
-        if (parseResponse && !parseSSID(response, ssid)) {
-//            serialPrint("CANNOT PARSE SSID");
-            parseResponse = false;
-        }
-
-        if (parseResponse && !parsePassword(response, password)){
-//            serialPrint("CANNOT PARSE PASSWORD");
-            parseResponse = false;
-        }
-
-        if (!parseResponse) {
-            if (!localIp.fromString(preferences.getString("localip", ""))){
-                continue;
-            }
-
-            if (!subnet.fromString(preferences.getString("subnet", ""))){
-                continue;
-            }
-
-            if (!gateway.fromString(preferences.getString("gateway", ""))){
-                continue;
-            }
-
-            ssid = preferences.getString("ssid", "");
-            password = preferences.getString("password", "");
-            port = preferences.getInt("port", 0);
-
-            if ((ssid == "") || (port == 0)) {
-                continue;
-            }
-
-        } else {
-            serialPrint("@OK");
-            preferences.putString("localip", localIp.toString());
-            preferences.putString("subnet", subnet.toString());
-            preferences.putString("gateway", gateway.toString());
-            preferences.putString("ssid", ssid);
-            preferences.putString("password", password);
-            preferences.putInt("port", port);
-            preferences.end();
-            serialPrint("Settings correctly saved -> restart in 30s...");
-            delay(30000);
-            ESP.restart();
-        }
-        
-        if (!WiFi.config(localIp, gateway, subnet)){
-//           serialPrint("CANNOT SETUP WIFI");
-//           serialPrint(localIp.toString());
-//           serialPrint(subnet.toString());
-//           serialPrint(gateway.toString());
-           continue;
-
-        }
-        if (wifiConnect(ssid, password)) {
-            preferences.end();
-            return;
-        }
-//        serialPrint("CANNOT CONNECT TO WIFI");
-//        serialPrint(ssid);
-//        serialPrint(password);
-//        serialPrint(String(WiFi.status()));
-    }
-
-}
-
 void cmdProtocolFuncWifi(WiFiClient *client) {
     String code = Serial.readStringUntil('\n');
     if (code.startsWith("@Q1")) {
@@ -264,7 +144,71 @@ void setup() {
 
     Serial.begin(9600);
 
-    initializeWifi();
+    //initializeWifi();
+
+    bool hasCorrectConfig = false;
+    preferences.begin("wifi-provision", true);
+    bool apMode = preferences.getBool("ap-mode", false);
+    String ssid = preferences.getString("ssid", "");
+    String password = preferences.getString("password", "");
+    bool dhcpEnabled = preferences.getBool("dhcp-enabled", true);
+
+    IPAddress localIp;
+    IPAddress subnet;
+    IPAddress gateway;
+
+    if (!dhcpEnabled) {
+      if (!localIp.fromString(preferences.getString("localip", ""))){
+        hasCorrectConfig = false;
+      }
+
+      if (!subnet.fromString(preferences.getString("subnet", ""))){
+        hasCorrectConfig = false;
+      }
+
+      if (!gateway.fromString(preferences.getString("gateway", ""))){
+        hasCorrectConfig = false;
+      }
+      if (ssid.isEmpty()) {
+        hasCorrectConfig = false;
+      }
+    }
+    preferences.end();
+
+    // todo some decission making
+    if (!hasCorrectConfig  || 2 == 2) {
+
+      WiFiProvisioner provisioner;
+
+      provisioner.onSuccess(
+          [](const char *ssid, const char *password, const char *input) {
+          Serial.printf("Provisioning successful! Connected to SSID: %s\n", ssid);
+          if (password) {
+          Serial.printf("Password: %s\n", password);
+          }
+          //todo reset
+          });
+
+      provisioner.startProvisioning();
+      ESP.restart();
+    }
+
+
+    WiFi.mode(WIFI_STA);
+    WiFi.disconnect(true, true);
+
+    if (!dhcpEnabled) {
+        if (!WiFi.config(localIp, gateway, subnet)){
+          delay(5000);
+          ESP.restart();
+        }
+    }
+
+    if (wifiConnect(ssid, password)) {
+        delay(5000);
+        ESP.restart();
+    }
+
     wifiServer = new WiFiServer(port);
     wifiServer->begin();
 
