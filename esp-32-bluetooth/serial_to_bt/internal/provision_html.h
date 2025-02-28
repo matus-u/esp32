@@ -4,12 +4,10 @@
 #include <Arduino.h>
 
 static constexpr const char index_html1[] PROGMEM = R"rawliteral(
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
-    <title>)rawliteral";
-// HTML_TITLE
-static constexpr const char index_html2[] PROGMEM = R"rawliteral(</title>
+    <title>Welcome to Wi-Fi Provisioning</title>
     <meta charset="UTF-8" />
     <meta
       name="viewport"
@@ -20,9 +18,7 @@ static constexpr const char index_html2[] PROGMEM = R"rawliteral(</title>
         --card-background: #ffffff;
         --background-color: #f9f9f9;
         --font-color: #1a1f36;
-        --theme-color: )rawliteral";
-// THEME_COLOR
-static constexpr const char index_html3[] PROGMEM = R"rawliteral(;
+        --theme-color: darkblue;
         --shadow-color: rgba(0, 0, 0, 0.1);
         --border-color: #cccccc;
       }
@@ -84,14 +80,18 @@ static constexpr const char index_html3[] PROGMEM = R"rawliteral(;
           cursor: pointer;
           border: 0.0625rem solid var(--bc, var(--border-color));
           background: var(--b, var(--background));
-          transition: background 0.3s, border-color 0.3s, box-shadow 0.2s;
+          transition:
+            background 0.3s,
+            border-color 0.3s,
+            box-shadow 0.2s;
           &:after {
             content: "";
             display: block;
             left: 0;
             top: 0;
             position: absolute;
-            transition: transform var(--d-t, 0.3s) var(--d-t-e, ease),
+            transition:
+              transform var(--d-t, 0.3s) var(--d-t-e, ease),
               opacity var(--d-o, 0.2s);
           }
           &:checked {
@@ -255,7 +255,8 @@ static constexpr const char index_html3[] PROGMEM = R"rawliteral(;
       .btn-process {
         -webkit-tap-highlight-color: transparent;
         background-color: var(--theme-color);
-        box-shadow: 0 0.25rem 0.5rem var(--shadow-color),
+        box-shadow:
+          0 0.25rem 0.5rem var(--shadow-color),
           0 0.5rem 1.5rem var(--shadow-color);
         font-size: 1rem;
         border: none;
@@ -322,7 +323,8 @@ static constexpr const char index_html3[] PROGMEM = R"rawliteral(;
         stroke-miterlimit: 10;
         margin-top: 3rem;
         box-shadow: inset 0rem 0rem 0rem #7ac142;
-        animation: fill 0.4s ease-in-out 0.4s forwards,
+        animation:
+          fill 0.4s ease-in-out 0.4s forwards,
           scale 0.3s ease-in-out 0.9s both;
       }
 
@@ -480,6 +482,75 @@ static constexpr const char index_html3[] PROGMEM = R"rawliteral(;
           <div id="error-password-message" class="error-message"></div>
         </div>
         <div class="container">
+          <table>
+            <thead>
+              <tr>
+                <th class="header">IP Settings:</th>
+                <th>
+                  <label>
+                    <input
+                      type="radio"
+                      name="network-mode"
+                      value="dhcp"
+                      checked
+                    />
+                    DHCP
+                  </label>
+                </th>
+                <th>
+                  <label>
+                    <input type="radio" name="network-mode" value="static" />
+                    Static
+                  </label>
+                </th>
+              </tr>
+            </thead>
+          </table>
+        </div>
+
+        <div class="container" id="hiddenIp" style="display: none">
+          <label>IP address</label>
+          <div id="error-ip-input">
+            <input
+              type="text"
+              name="hidden_ip"
+              id="ip"
+              class="textinput"
+              placeholder="192.168.1.10"
+            />
+            <div id="error-ip-message" class="error-message"></div>
+          </div>
+        </div>
+
+        <div class="container" id="hiddenNetmask" style="display: none">
+          <label>Netmask </label>
+          <div id="error-netmask-input">
+            <input
+              type="text"
+              name="hidden_netmask"
+              id="netmask"
+              class="textinput"
+              placeholder="255.255.255.0"
+            />
+            <div id="error-netmask-message" class="error-message"></div>
+          </div>
+        </div>
+
+        <div class="container" id="hiddenGateway" style="display: none">
+          <label>Gateway </label>
+          <div id="error-gateway-input">
+            <input
+              type="text"
+              name="hidden_gateway"
+              id="gateway"
+              class="textinput"
+              placeholder="192.168.1.1"
+            />
+            <div id="error-gateway-message" class="error-message"></div>
+          </div>
+        </div>
+
+        <div class="container">
           <button
             class="btn-process"
             id="submit-btn"
@@ -505,104 +576,184 @@ static constexpr const char index_html3[] PROGMEM = R"rawliteral(;
         31: `fill-opacity=".3" d="M15.5 14.5c0-2.8 2.2-5 5-5c.36 0 .71.04 1.05.11L23.64 7c-.45-.34-4.93-4-11.64-4C5.28 3 .81 6.66.36 7l10.08 12.56c.8 1 2.32 1 3.12 0l1.94-2.42V14.5z"/><path fill="var(--font-color)" d="M15.5 14.5a4.92 4.92 0 0 1 3.27-4.68C17.29 8.98 14.94 8 12 8c-4.81 0-8.04 2.62-8.47 2.95l6.91 8.61c.8 1 2.32 1 3.12 0l1.94-2.42V14.5zM23 16v-1.5c0-1.4-1.1-2.5-2.5-2.5S18 13.1 18 14.5V16c-.5 0-1 .5-1 1v4c0 .5.5 1 1 1h5c.5 0 1-.5 1-1v-4c0-.5-.5-1-1-1zm-1 0h-3v-1.5c0-.8.7-1.5 1.5-1.5s1.5.7 1.5 1.5V16z"/></svg>`,
         40: `d="M23.64 7c-.45-.34-4.93-4-11.64-4C5.28 3 .81 6.66.36 7l10.08 12.56c.8 1 2.32 1 3.12 0L23.64 7z"/></svg>`,
         41: `d="M23.21 8.24C20.22 5.6 16.3 4 12 4S3.78 5.6.79 8.24C.35 8.63.32 9.3.73 9.71l5.62 5.63l4.94 4.95c.39.39 1.02.39 1.42 0l2.34-2.34V15c0-.45.09-.88.23-1.29c.54-1.57 2.01-2.71 3.77-2.71h2.94l1.29-1.29c.4-.41.37-1.08-.07-1.47z"/><path fill="var(--font-color)" d="M22 16v-1c0-1.1-.9-2-2-2s-2 .9-2 2v1c-.55 0-1 .45-1 1v3c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-3c0-.55-.45-1-1-1zm-1 0h-2v-1c0-.55.45-1 1-1s1 .45 1 1v1z"/></svg>`,
-      };
+      }
 
-      const eye_open = `M21.92 11.6C19.9 6.91 16.1 4 12 4s-7.9 2.91-9.92 7.6a1 1 0 0 0 0 .8C4.1 17.09 7.9 20 12 20s7.9-2.91 9.92-7.6a1 1 0 0 0 0-.8ZM12 18c-3.17 0-6.17-2.29-7.9-6C5.83 8.29 8.83 6 12 6s6.17 2.29 7.9 6c-1.73 3.71-4.73 6-7.9 6Zm0-10a4 4 0 1 0 4 4a4 4 0 0 0-4-4Zm0 6a2 2 0 1 1 2-2a2 2 0 0 1-2 2Z`;
-      const eye_close = `M10.94 6.08A6.93 6.93 0 0 1 12 6c3.18 0 6.17 2.29 7.91 6a15.23 15.23 0 0 1-.9 1.64a1 1 0 0 0-.16.55a1 1 0 0 0 1.86.5a15.77 15.77 0 0 0 1.21-2.3a1 1 0 0 0 0-.79C19.9 6.91 16.1 4 12 4a7.77 7.77 0 0 0-1.4.12a1 1 0 1 0 .34 2ZM3.71 2.29a1 1 0 0 0-1.42 1.42l3.1 3.09a14.62 14.62 0 0 0-3.31 4.8a1 1 0 0 0 0 .8C4.1 17.09 7.9 20 12 20a9.26 9.26 0 0 0 5.05-1.54l3.24 3.25a1 1 0 0 0 1.42 0a1 1 0 0 0 0-1.42Zm6.36 9.19l2.45 2.45A1.81 1.81 0 0 1 12 14a2 2 0 0 1-2-2a1.81 1.81 0 0 1 .07-.52ZM12 18c-3.18 0-6.17-2.29-7.9-6a12.09 12.09 0 0 1 2.7-3.79L8.57 10A4 4 0 0 0 14 15.43L15.59 17A7.24 7.24 0 0 1 12 18Z`;
+      const eye_open = `M21.92 11.6C19.9 6.91 16.1 4 12 4s-7.9 2.91-9.92 7.6a1 1 0 0 0 0 .8C4.1 17.09 7.9 20 12 20s7.9-2.91 9.92-7.6a1 1 0 0 0 0-.8ZM12 18c-3.17 0-6.17-2.29-7.9-6C5.83 8.29 8.83 6 12 6s6.17 2.29 7.9 6c-1.73 3.71-4.73 6-7.9 6Zm0-10a4 4 0 1 0 4 4a4 4 0 0 0-4-4Zm0 6a2 2 0 1 1 2-2a2 2 0 0 1-2 2Z`
+      const eye_close = `M10.94 6.08A6.93 6.93 0 0 1 12 6c3.18 0 6.17 2.29 7.91 6a15.23 15.23 0 0 1-.9 1.64a1 1 0 0 0-.16.55a1 1 0 0 0 1.86.5a15.77 15.77 0 0 0 1.21-2.3a1 1 0 0 0 0-.79C19.9 6.91 16.1 4 12 4a7.77 7.77 0 0 0-1.4.12a1 1 0 1 0 .34 2ZM3.71 2.29a1 1 0 0 0-1.42 1.42l3.1 3.09a14.62 14.62 0 0 0-3.31 4.8a1 1 0 0 0 0 .8C4.1 17.09 7.9 20 12 20a9.26 9.26 0 0 0 5.05-1.54l3.24 3.25a1 1 0 0 0 1.42 0a1 1 0 0 0 0-1.42Zm6.36 9.19l2.45 2.45A1.81 1.81 0 0 1 12 14a2 2 0 0 1-2-2a1.81 1.81 0 0 1 .07-.52ZM12 18c-3.18 0-6.17-2.29-7.9-6a12.09 12.09 0 0 1 2.7-3.79L8.57 10A4 4 0 0 0 14 15.43L15.59 17A7.24 7.24 0 0 1 12 18Z`
 
-      const table = document.getElementById("table-body");
-      const form = document.getElementById("network_form");
-      const ssid_listener = document.getElementById("ssid");
-      const password_listener = document.getElementById("password");
+      const table = document.getElementById("table-body")
+      const form = document.getElementById("network_form")
+      const ssid_listener = document.getElementById("ssid")
+      const password_listener = document.getElementById("password")
+      const dhcpRadio = document.querySelector('input[value="dhcp"]');
+      const staticRadio = document.querySelector('input[value="static"]');
 
-      form.addEventListener("submit", submitForm);
-      ssid_listener.addEventListener("input", updateValue);
-      password_listener.addEventListener("input", updateValue);
+      form.addEventListener("submit", submitForm)
+      ssid_listener.addEventListener("input", updateValue)
+      password_listener.addEventListener("input", updateValue)
 
-      const title_logo = `)rawliteral";
-// SVG_LOGO
-static constexpr const char index_html4[] PROGMEM =
-    R"rawliteral(`;
-      const title_text = `)rawliteral";
-// PROJECT_TITLE
-static constexpr const char index_html5[] PROGMEM =
-    R"rawliteral(`;
-      const title_sub = `)rawliteral";
-// PROJECT_SUB_TITLE
-static constexpr const char index_html6[] PROGMEM =
-    R"rawliteral(`;
-      const title_info = `)rawliteral";
-// PROJECT_INFO
-static constexpr const char index_html9[] PROGMEM =
-    R"rawliteral(;
-      const connection_successful_text = `)rawliteral";
-// CONNECTION_SUCCESFUL
-static constexpr const char index_html10[] PROGMEM =
-    R"rawliteral(`;
-      const footer_text = `)rawliteral";
-// FOOTER_TEXT
+      const ip_listener = document.getElementById("ip");
+      const gw_listener = document.getElementById("gateway");
+      const netmask_listener = document.getElementById("netmask");
 
-static constexpr const char index_html13[] PROGMEM =
-    R"rawliteral(;
-    
+      ip_listener.addEventListener("input", updateIp)
+      gw_listener.addEventListener("input", updateGw)
+      netmask_listener.addEventListener("input", updateNetmask)
+
+      const title_logo = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="5rem" height="5rem" preserveAspectRatio="xMidYMid meet" viewBox="0 0 32 32">
+            <path fill="var(--font-color)" d="M30 19h-4v-4h-2v9H8V8h9V6h-4V2h-2v4H8a2.002 2.002 0 0 0-2 2v3H2v2h4v6H2v2h4v3a2.002 2.002 0 0 0 2 2h3v4h2v-4h6v4h2v-4h3a2.003 2.003 0 0 0 2-2v-3h4Z"/>
+            <path fill="var(--theme-color)" d="M21 21H11V11h10zm-8-2h6v-6h-6zm18-6h-2A10.012 10.012 0 0 0 19 3V1a12.013 12.013 0 0 1 12 12z"/>
+            <path fill="var(--font-color)" d="M26 13h-2a5.006 5.006 0 0 0-5-5V6a7.008 7.008 0 0 1 7 7Z"/>
+          </svg>`
+      const title_text = `Wifi Provisioner`
+      const title_sub = `Device Setup`
+      const title_info = `Follow the steps to provision your device`
+      const connection_successful_text = `Your device is now provisioned and ready to use.`
+      const footer_text = `All rights reserved`
+
       window.addEventListener("DOMContentLoaded", (event) => {
-        document.getElementById("logo-container").innerHTML = title_logo;
-        document.getElementById("app-title").textContent = title_text;
-        document.getElementById("app-subtitle").textContent = title_sub;
-        let infoParagraph = document.getElementById("info-text");
-        infoParagraph.textContent = title_info;
+        document.getElementById("logo-container").innerHTML = title_logo
+        document.getElementById("app-title").textContent = title_text
+        document.getElementById("app-subtitle").textContent = title_sub
+        let infoParagraph = document.getElementById("info-text")
+        infoParagraph.textContent = title_info
 
-        document.getElementById("copyright").textContent = footer_text;
-
-      });
+        document.getElementById("copyright").textContent = footer_text
+        dhcpRadio.addEventListener("change", toggleIpFields);
+        staticRadio.addEventListener("change", toggleIpFields);
+      })
 
       window.addEventListener("load", (event) => {
-        loadSSID();
-      });
+        loadSSID()
+      })
+      
+      function toggleIpFields() {
+        const state = isIpStatic() ? "" : "none"
+        
+        const ipInput = document.getElementById("hiddenIp");
+        const gatewayInput = document.getElementById("hiddenGateway");
+        const netmaskInput = document.getElementById("hiddenNetmask");
+        
+        [ipInput, gatewayInput, netmaskInput].forEach(input => {
+            input.style.display = state;
+        });
+
+        showError("gateway", "", false)
+        showError("ip", "", false)
+        showError("netmask", "", false)
+      }
+
+      function isIpStatic() {
+        return staticRadio.checked;
+      }
+
+      function isValidIpFormat(ip) {
+        return /^(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)$/.test(
+          ip,
+        )
+      }
+
+      function isValidIp() {
+        return isValidIpFormat(ip_listener.value);
+      }
+
+      function isValidGw() {
+        return isValidIpFormat(gw_listener.value);
+      }
+
+      function isValidMask() {
+        const validMasks = [
+          "255.255.255.255",
+          "255.255.255.254",
+          "255.255.255.252",
+          "255.255.255.248",
+          "255.255.255.240",
+          "255.255.255.224",
+          "255.255.255.192",
+          "255.255.255.128",
+          "255.255.255.0",
+          "255.255.254.0",
+          "255.255.252.0",
+          "255.255.248.0",
+          "255.255.240.0",
+          "255.255.224.0",
+          "255.255.192.0",
+          "255.255.128.0",
+          "255.255.0.0",
+          "255.254.0.0",
+          "255.252.0.0",
+          "255.248.0.0",
+          "255.240.0.0",
+          "255.224.0.0",
+          "255.192.0.0",
+          "255.128.0.0",
+          "255.0.0.0",
+        ];
+        return validMasks.includes(netmask_listener.value)
+      }
 
       function updateValue(e) {
-        showError(e.target.id, "", false);
+        showError(e.target.id, "", false)
+      }
+
+      function updateGw(e) {
+          if (isValidGw()) {
+            showError(e.target.id, "", false)
+          }
+      }
+
+      function updateIp(e) {
+          if (isValidIp()) {
+            showError(e.target.id, "", false)
+          }
+      }
+
+      function updateNetmask(e) {
+          if (isValidMask()) {
+            showError(e.target.id, "", false)
+          }
       }
 
       function isRadioChecked() {
         return Array.from(
-          document.querySelectorAll('input[type="radio"]')
-        ).some((radio) => radio.checked);
+          document.querySelectorAll('input[type="radio"]'),
+        ).some((radio) => radio.checked)
       }
 
       function showError(name, message, state) {
         const block =
           name.toLowerCase() === "submit"
             ? null
-            : document.getElementById(`error-${name}-input`);
-        const messageElem = document.getElementById(`error-${name}-message`);
+            : document.getElementById(`error-${name}-input`)
+        const messageElem = document.getElementById(`error-${name}-message`)
 
-        if (block) block.classList.toggle("error", state);
-        if (messageElem) messageElem.textContent = state ? message : "";
+        if (block) block.classList.toggle("error", state)
+        if (messageElem) messageElem.textContent = state ? message : ""
       }
 
       function resetErrors() {
-        ["submit", "password", "ssid"].forEach((field) => {
-          showError(field, "", false);
-        });
+        ;["submit", "password", "ssid", "gateway", "ip", "netmask"].forEach((field) => {
+          showError(field, "", false)
+        })
       }
 
       function connectingState(state) {
-        const ring = document.getElementById("connecting-ring");
-        const submitBtn = document.getElementById("submit-btn");
+        const ring = document.getElementById("connecting-ring")
+        const submitBtn = document.getElementById("submit-btn")
 
         if (!ring || !submitBtn) {
-          return;
+          return
         }
 
-        const buttonTxt = state ? "Connecting" : "Connect";
-        const ringVisi = state ? "" : "none";
-        submitBtn.innerHTML = `${buttonTxt}<span id="connecting-ring" style="display:${ringVisi};" ></span>`;
-        submitBtn.disabled = state;
+        const buttonTxt = state ? "Connecting" : "Connect"
+        const ringVisi = state ? "" : "none"
+        submitBtn.innerHTML = `${buttonTxt}<span id="connecting-ring" style="display:${ringVisi};" ></span>`
+        submitBtn.disabled = state
       }
 
       function submitForm(event) {
-        event.preventDefault();
+        event.preventDefault()
 
         const validations = [
           {
@@ -621,35 +772,57 @@ static constexpr const char index_html13[] PROGMEM =
             field: "password",
             message: "Password is required",
           },
-        ];
+          {
+            condition: isIpStatic() && !isValidIp(),
+            field: "ip",
+            message: "Incorrect ip format",
+          },
+          {
+            condition: isIpStatic() && !isValidGw(),
+            field: "gateway",
+            message: "Incorrect gateway format",
+          },
+          {
+            condition: isIpStatic() && !isValidMask(),
+            field: "netmask",
+            message: "Incorrect netmask format",
+          },
+        ]
 
-        let hasErrors = false;
+        let hasErrors = false
 
         validations.forEach(({ condition, field, message }) => {
           if (condition && message) {
-            showError(field, message, true);
-            hasErrors = true;
+            showError(field, message, true)
+            hasErrors = true
           }
-        });
+        })
 
-        if (hasErrors) return;
+        if (hasErrors) return
 
-        resetErrors();
-        connectingState(true);
-        disableForm(true);
+        resetErrors()
+        connectingState(true)
+        disableForm(true)
 
-        let payload = {};
+        let payload = {}
 
         if (isHidden()) {
-          payload.ssid = ssid_listener.value;
+          payload.ssid = ssid_listener.value
         } else {
           payload.ssid = document.querySelector(
-            'input[name="ssid"]:checked'
-          )?.value;
+            'input[name="ssid"]:checked',
+          )?.value
+        }
+
+        payload.dhcp_enabled = !isIpStatic()
+        if (isIpStatic()) {
+            payload.ip = ip_listener.value
+            payload.gw = gw_listener.value
+            payload.netmask = netmask_listener.value
         }
 
         if ((isAuth() || isHidden()) && password_listener.value) {
-          payload.password = password_listener.value;
+          payload.password = password_listener.value
         }
 
         fetch("/configure", {
@@ -658,38 +831,34 @@ static constexpr const char index_html13[] PROGMEM =
           body: JSON.stringify(payload),
         })
           .then((response) => {
-            if (!response.ok) throw new Error("Failed to connect");
-            return response.json();
+            if (!response.ok) throw new Error("Failed to connect")
+            return response.json()
           })
           .then((jsonResponse) => {
             if (jsonResponse.success) {
-              successPage(payload.ssid);
+              successPage(payload.ssid)
             } else {
               if (
                 jsonResponse.reason === "ssid" &&
                 payload.password &&
                 !isHidden()
               ) {
-                showError("password", "Invalid password", true);
+                showError("password", "Invalid password", true)
               } else {
-                showError(
-                  "submit",
-                  `Couldn't connect to ${payload.ssid}`,
-                  true
-                );
+                showError("submit", `Couldn't connect to ${payload.ssid}`, true)
               }
             }
           })
           .catch(() => showError("submit", "Error on connection request", true))
           .finally(() => {
-            connectingState(false);
-            disableForm(false);
-          });
+            connectingState(false)
+            disableForm(false)
+          })
       }
 
       function successPage(ssid_text) {
-        const card = document.getElementById("main-card");
-        card.innerHTML = "";
+        const card = document.getElementById("main-card")
+        card.innerHTML = ""
         card.innerHTML = `
        <div class="wrapper">
           <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52"> <circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none"/> <path class="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/></svg>
@@ -701,67 +870,67 @@ static constexpr const char index_html13[] PROGMEM =
          <p style="opacity: 0.5;">${connection_successful_text}</p>
          <p style="opacity: 0.5;">You can close the window</p>
        </div>
-       `;
+       `
       }
 
       function onRadio(element) {
-        resetErrors();
+        resetErrors()
 
-        const isHiddenNetwork = element.id === "hiddennetwork_radio";
+        const isHiddenNetwork = element.id === "hiddennetwork_radio"
 
         if (isHiddenNetwork) {
           const radios = document.querySelectorAll(
-            'input[name="ssid"]:not(#hiddennetwork_radio)'
-          );
-          radios.forEach((radio) => (radio.checked = false));
+            'input[name="ssid"]:not(#hiddennetwork_radio)',
+          )
+          radios.forEach((radio) => (radio.checked = false))
         } else {
-          document.getElementById("hiddennetwork_radio").checked = false;
+          document.getElementById("hiddennetwork_radio").checked = false
         }
 
-        showssidField(isHiddenNetwork);
-        showpasswordField(isHiddenNetwork || element.dataset.auth > 0);
+        showssidField(isHiddenNetwork)
+        showpasswordField(isHiddenNetwork || element.dataset.auth > 0)
       }
 
       function disableForm(state) {
-        Array.from(form.elements).forEach((el) => (el.disabled = state));
-        disableLinks(state);
+        Array.from(form.elements).forEach((el) => (el.disabled = state))
+        disableLinks(state)
       }
 
       function refreshSpin(state) {
         document
           .getElementById("refresh-icon")
-          .classList.toggle("icn-spinner", state);
+          .classList.toggle("icn-spinner", state)
       }
 
       function loadSSID() {
-        disableForm(true);
-        refreshSpin(true);
-        resetErrors();
+        disableForm(true)
+        refreshSpin(true)
+        resetErrors()
 
         fetch("/update")
           .then((response) => {
-            if (!response.ok) throw new Error("Network response was not ok");
-            return response.json();
+            if (!response.ok) throw new Error("Network response was not ok")
+            return response.json()
           })
           .then((jsonResponse) => {
-            document.getElementById("table-body").innerHTML = "";
+            document.getElementById("table-body").innerHTML = ""
             jsonResponse.network.forEach(({ ssid, authmode, rssi }) =>
-              addTableRow(ssid, authmode, rssi)
-            );
+              addTableRow(ssid, authmode, rssi),
+            )
           })
           .catch(() => {
-            console.error("Error on Refresh");
-            showError("submit", "Error on Refresh", true);
+            console.error("Error on Refresh")
+            showError("submit", "Error on Refresh", true)
           })
           .finally(() => {
-            refreshSpin(false);
-            disableForm(false);
-          });
+            refreshSpin(false)
+            disableForm(false)
+          })
       }
 
       function addTableRow(ssid, authmode, rssi) {
-        const locked = authmode > 0 ? 1 : 0;
-        const icon = svgs["" + rssi + locked];
+        const locked = authmode > 0 ? 1 : 0
+        const icon = svgs["" + rssi + locked]
         table.innerHTML += `
        <tr>
            <td class="radiossid">
@@ -772,71 +941,70 @@ static constexpr const char index_html13[] PROGMEM =
              <svg xmlns="http://www.w3.org/2000/svg" style="vertical-align: -0.125em;" width="1em" height="1em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24"><path fill="var(--font-color)" ${icon}
            </td>
        </tr>
-       `;
+       `
       }
 
       function togglePassShow() {
-        const input = document.getElementById("password");
-        const isPassword = input.type === "password";
-        input.type = isPassword ? "text" : "password";
+        const input = document.getElementById("password")
+        const isPassword = input.type === "password"
+        input.type = isPassword ? "text" : "password"
         document
           .getElementById("eye_icon")
-          .setAttribute("d", isPassword ? eye_open : eye_close);
+          .setAttribute("d", isPassword ? eye_open : eye_close)
       }
 
       function showssidField(state) {
         document.getElementById("hiddenNetwork").style.display = state
           ? ""
-          : "none";
+          : "none"
       }
 
       function showpasswordField(state) {
         document.getElementById("hiddenPassword").style.display = state
           ? ""
-          : "none";
+          : "none"
       }
 
       function isHidden() {
-        return document.getElementById("hiddennetwork_radio").checked;
+        return document.getElementById("hiddennetwork_radio").checked
       }
 
       function isAuth() {
         const selectedRadio = document.querySelector(
-          'input[name="ssid"]:checked'
-        );
-        return selectedRadio ? parseInt(selectedRadio.dataset.auth) > 0 : false;
+          'input[name="ssid"]:checked',
+        )
+        return selectedRadio ? parseInt(selectedRadio.dataset.auth) > 0 : false
       }
 
       function isPasswordVisible() {
         return document.getElementById("hiddenPassword").style.display === ""
           ? true
-          : false;
+          : false
       }
       function isSsidVisible() {
         return document.getElementById("hiddenNetwork").style.display === ""
           ? true
-          : false;
+          : false
       }
 
       function disableLinks(state) {
-        let linkstate;
-        state ? (linkstate = "none") : (linkstate = "");
+        let linkstate
+        state ? (linkstate = "none") : (linkstate = "")
       }
 
       function connectingState(state) {
-        const ring = document.getElementById("connecting-ring");
-        const submitBtn = document.getElementById("submit-btn");
+        const ring = document.getElementById("connecting-ring")
+        const submitBtn = document.getElementById("submit-btn")
 
         if (!ring || !submitBtn) {
-          return;
+          return
         }
 
-        const buttonTxt = state ? "Connecting" : "Connect";
-        const ringVisi = state ? "" : "none";
-        submitBtn.innerHTML = `${buttonTxt}<span id="connecting-ring" style="display:${ringVisi};" ></span>`;
-        submitBtn.disabled = state;
+        const buttonTxt = state ? "Connecting" : "Connect"
+        const ringVisi = state ? "" : "none"
+        submitBtn.innerHTML = `${buttonTxt}<span id="connecting-ring" style="display:${ringVisi};" ></span>`
+        submitBtn.disabled = state
       }
-
     </script>
   </body>
 </html>
