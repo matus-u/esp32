@@ -15,8 +15,6 @@
 WiFiServer *wifiServer;
 int port = 8000;
 
-Preferences preferences;
-
 void serialPrint(String data) {
     Serial.println(data);
 }
@@ -147,6 +145,8 @@ void setup() {
     //initializeWifi();
 
     bool hasCorrectConfig = false;
+
+    Preferences preferences;
     preferences.begin("wifi-provision", true);
     bool apMode = preferences.getBool("ap-mode", false);
     String ssid = preferences.getString("ssid", "");
@@ -181,18 +181,27 @@ void setup() {
       WiFiProvisioner provisioner;
 
       provisioner.onSuccess(
-          [](const char *ssid, const char *password, const char *input) {
-          Serial.printf("Provisioning successful! Connected to SSID: %s\n", ssid);
-          if (password) {
-          Serial.printf("Password: %s\n", password);
+          [](const char *ssid, const char *password, IpSettings* settings) {
+
+          Preferences preferences;
+          preferences.begin("wifi-provision", false);
+          preferences.putString("ssid", String(ssid));
+          if (!password) {
+            preferences.putString("password", "");
+          } else {
+            preferences.putString("password", String(password));
           }
-          //todo reset
-          });
+          preferences.putBool("dhcp-enabled", settings->dhcp_enabled);
+          preferences.putString("localip", settings->ip.toString());
+          preferences.putString("subnet", settings->netmask.toString());
+          preferences.putString("gateway", settings->gw.toString());
+          preferences.end();
+
+      });
 
       provisioner.startProvisioning();
       ESP.restart();
     }
-
 
     WiFi.mode(WIFI_STA);
     WiFi.disconnect(true, true);

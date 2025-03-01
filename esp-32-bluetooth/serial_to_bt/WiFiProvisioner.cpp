@@ -248,9 +248,6 @@ bool WiFiProvisioner::startProvisioning() {
               [this]() { this->handleConfigureRequest(); });
   _server->on("/update", [this]() { this->handleUpdateRequest(); });
   _server->on("/generate_204", [this]() { this->handleRootRequest(); });
-  _server->on("/fwlink", [this]() { this->handleRootRequest(); });
-  _server->on("/factoryreset", HTTP_POST,
-              [this]() { this->handleResetRequest(); });
   _server->onNotFound([this]() { this->handleRootRequest(); });
 
   _server->begin();
@@ -472,6 +469,26 @@ void WiFiProvisioner::handleConfigureRequest() {
   const char *ssid_connect = doc["ssid"];
   const char *pass_connect = doc["password"];
   const char *input_connect = doc["code"];
+  IpSettings ipSet;
+  ipSet.dhcp_enabled = doc["dhcp_enabled"];
+
+  if (!ipSet.dhcp_enabled) {
+      const char *ip = doc["ip"];
+      if ((!ip) || (!ipSet.ip.fromString(ip))){
+        sendBadRequestResponse();
+        return;
+      }
+      const char *gw = doc["gw"];
+      if ((!gw) || (!ipSet.gw.fromString(gw))){
+        sendBadRequestResponse();
+        return;
+      }
+      const char *nm = doc["netmask"];
+      if ((!nm) || (!ipSet.netmask.fromString(nm))){
+        sendBadRequestResponse();
+        return;
+      }
+  }
 
   WIFI_PROVISIONER_DEBUG_LOG(
       WIFI_PROVISIONER_LOG_INFO, "SSID: %s, PASSWORD: %s, INPUT: %s",
@@ -488,6 +505,15 @@ void WiFiProvisioner::handleConfigureRequest() {
   WiFi.disconnect(false, true);
   delay(_wifiDelay);
 
+  if (!ipSet.dhcp_enabled) {
+      if (!WiFi.config(ipSet.ip, ipSet.gw, ipSet.netmask)) {
+          handleUnsuccessfulConnection("ipconfig");
+          return;
+      }
+      delay(_wifiDelay);
+  }
+
+
   if (!connect(ssid_connect, pass_connect)) {
     WIFI_PROVISIONER_DEBUG_LOG(WIFI_PROVISIONER_LOG_WARN,
                                "Failed to connect to WiFi: %s with password %s",
@@ -499,7 +525,7 @@ void WiFiProvisioner::handleConfigureRequest() {
   handleSuccesfulConnection();
 
   if (onSuccessCallback) {
-    onSuccessCallback(ssid_connect, pass_connect, input_connect);
+    onSuccessCallback(ssid_connect, pass_connect, &ipSet);
   }
 
   // Show success page for a while before closing the server
@@ -602,22 +628,4 @@ void WiFiProvisioner::handleUnsuccessfulConnection(const char *reason) {
   client.stop();
 
   WiFi.disconnect(false, true);
-}
-
-/**
- * @brief Handles the factory reset request and invokes the registered reset
- * callback.
- *
- * This function triggers the `factoryResetCallback` if set and performs any
- * required reset operations. After the reset, the provisioning UI is displayed
- * again.
- */
-void WiFiProvisioner::handleResetRequest() {
-
-  WiFiClient client = _server->client();
-
-  sendHeader(client, 200, "text/html", 0);
-
-  client.clear();
-  client.stop();
 }

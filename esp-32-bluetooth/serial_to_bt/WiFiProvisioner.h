@@ -7,13 +7,20 @@
 class WebServer;
 class DNSServer;
 
+struct IpSettings {
+    bool dhcp_enabled;
+    IPAddress ip;
+    IPAddress gw;
+    IPAddress netmask;
+};
+
 class WiFiProvisioner {
 public:
 
   using ProvisionCallback = std::function<void()>;
   using InputCheckCallback = std::function<bool(const char *)>;
   using SuccessCallback =
-      std::function<void(const char *, const char *, const char *)>;
+      std::function<void(const char *, const char *, IpSettings*)>;
   using FactoryResetCallback = std::function<void()>;
 
   explicit WiFiProvisioner();
