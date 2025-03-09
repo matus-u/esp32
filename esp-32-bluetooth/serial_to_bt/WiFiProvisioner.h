@@ -17,19 +17,19 @@ struct IpSettings {
 class WiFiProvisioner {
 public:
 
-  using ProvisionCallback = std::function<void()>;
-  using InputCheckCallback = std::function<bool(const char *)>;
   using SuccessCallback =
       std::function<void(const char *, const char *, IpSettings*)>;
-  using FactoryResetCallback = std::function<void()>;
+
+  using ApSuccessCallback =
+      std::function<void(const char *, const char *)>;
 
   explicit WiFiProvisioner();
   ~WiFiProvisioner();
 
   bool startProvisioning();
 
-  WiFiProvisioner &onProvision(ProvisionCallback callback);
   WiFiProvisioner &onSuccess(SuccessCallback callback);
+  WiFiProvisioner &onApSuccess(ApSuccessCallback callback);
 
 private:
   void loop();
@@ -39,12 +39,13 @@ private:
   void handleResetRequest();
   void handleUpdateRequest();
   void handleConfigureRequest();
+  void handleApConfigureRequest();
   void sendBadRequestResponse();
   void handleSuccesfulConnection();
   void handleUnsuccessfulConnection(const char *reason);
 
-  ProvisionCallback provisionCallback;
   SuccessCallback onSuccessCallback;
+  ApSuccessCallback onApSuccessCallback;
 
   WebServer *_server;
   DNSServer *_dnsServer;

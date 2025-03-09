@@ -141,11 +141,11 @@ void cmdProtocolFuncWifi(WiFiClient *client) {
 void setup() {
 
     Serial.begin(9600);
-
-    //initializeWifi();
+    Serial.setTimeout(5000);
+    String checkMsg = Serial.readStringUntil('\n');
+    Serial.setTimeout(1000);
 
     bool hasCorrectConfig = false;
-
     Preferences preferences;
     preferences.begin("wifi-provision", true);
     bool apMode = preferences.getBool("ap-mode", false);
@@ -157,26 +157,32 @@ void setup() {
     IPAddress subnet;
     IPAddress gateway;
 
-    if (!dhcpEnabled) {
-      if (!localIp.fromString(preferences.getString("localip", ""))){
-        hasCorrectConfig = false;
-      }
+    if (!apMode) {
+      if (!dhcpEnabled) {
+        if (!localIp.fromString(preferences.getString("localip", ""))){
+          hasCorrectConfig = false;
+        }
 
-      if (!subnet.fromString(preferences.getString("subnet", ""))){
-        hasCorrectConfig = false;
-      }
+        if (!subnet.fromString(preferences.getString("subnet", ""))){
+          hasCorrectConfig = false;
+        }
 
-      if (!gateway.fromString(preferences.getString("gateway", ""))){
-        hasCorrectConfig = false;
+        if (!gateway.fromString(preferences.getString("gateway", ""))){
+          hasCorrectConfig = false;
+        }
       }
-      if (ssid.isEmpty()) {
-        hasCorrectConfig = false;
-      }
+    }
+
+    if (ssid.isEmpty()) {
+      hasCorrectConfig = false;
+    }
+
+    if ((!apMode) && (password.isEmpty())) {
+      hasCorrectConfig = false;
     }
     preferences.end();
 
-    // todo some decission making
-    if (!hasCorrectConfig  || 2 == 2) {
+    if (!hasCorrectConfig  || checkMsg=="start-provisioning") {
 
       WiFiProvisioner provisioner;
 
@@ -186,6 +192,7 @@ void setup() {
           Preferences preferences;
           preferences.begin("wifi-provision", false);
           preferences.putString("ssid", String(ssid));
+          preferences.putBool("ap-mode", false);
           if (!password) {
             preferences.putString("password", "");
           } else {
@@ -199,23 +206,59 @@ void setup() {
 
       });
 
+      provisioner.onApSuccess(
+          [](const char *ssid, const char *password) {
+
+          Preferences preferences;
+          preferences.begin("wifi-provision", false);
+          preferences.putBool("ap-mode", true);
+          preferences.putString("ssid", String(ssid));
+          preferences.putString("password", String(password));
+          preferences.end();
+
+      });
+
       provisioner.startProvisioning();
+      delay(10000);
       ESP.restart();
     }
 
-    WiFi.mode(WIFI_STA);
-    WiFi.disconnect(true, true);
 
-    if (!dhcpEnabled) {
-        if (!WiFi.config(localIp, gateway, subnet)){
+    if (!apMode) {
+      WiFi.mode(WIFI_STA);
+      delay(100);
+      WiFi.disconnect(true, true);
+      delay(100);
+      if (!dhcpEnabled) {
+          if (!WiFi.config(localIp, gateway, subnet)){
+            delay(5000);
+            ESP.restart();
+          }
+      }
+
+      if (wifiConnect(ssid, password)) {
           delay(5000);
           ESP.restart();
-        }
-    }
+      }
+    } else {
+      WiFi.mode(WIFI_AP);
+      delay(100);
+      WiFi.disconnect(true, true);
+      delay(100);
 
-    if (wifiConnect(ssid, password)) {
-        delay(5000);
+      localIp = IPAddress(192, 168, 4, 1);
+      subnet = IPAddress(255, 255, 255, 0);
+
+      delay(100);
+      if (!WiFi.softAPConfig(localIp, localIp, subnet)) {
+        delay(3000);
         ESP.restart();
+      }
+      delay(100);
+      if (!WiFi.softAP(ssid, password)) {
+        delay(3000);
+        ESP.restart();
+      }
     }
 
     wifiServer = new WiFiServer(port);

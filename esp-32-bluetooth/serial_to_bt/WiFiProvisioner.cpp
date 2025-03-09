@@ -246,6 +246,8 @@ bool WiFiProvisioner::startProvisioning() {
   _server->on("/", [this]() { this->handleRootRequest(); });
   _server->on("/configure", HTTP_POST,
               [this]() { this->handleConfigureRequest(); });
+  _server->on("/configure_ap", HTTP_POST,
+              [this]() { this->handleApConfigureRequest(); });
   _server->on("/update", [this]() { this->handleUpdateRequest(); });
   _server->on("/generate_204", [this]() { this->handleRootRequest(); });
   _server->onNotFound([this]() { this->handleRootRequest(); });
@@ -283,35 +285,6 @@ void WiFiProvisioner::loop() {
     }
   }
   releaseResources();
-}
-
-/**
- * @brief Registers a callback function to handle provisioning events.
- *
- * This callback is invoked whenever provisioning starts, allowing the user
- * to, for example, dynamically adjust the configuration (e.g., showing or
- * hiding the input field)
- *
- * @param callback A callable object or lambda that performs operations when
- * provisioning starts.
- *
- * @return A reference to the `WiFiProvisioner` instance for method chaining.
- *
- * Example:
- * ```
- * provisioner.onProvision([]() {
- *     if (hasApiKey()) {
- *         provisioner.getConfig().SHOW_INPUT_FIELD = false;
- *     } else {
- *         provisioner.getConfig().SHOW_INPUT_FIELD = true;
- *     }
- *     Serial.println("Provisioning process has started.");
- * });
- * ```
- */
-WiFiProvisioner &WiFiProvisioner::onProvision(ProvisionCallback callback) {
-  provisionCallback = std::move(callback);
-  return *this;
 }
 
 /**
@@ -355,6 +328,11 @@ WiFiProvisioner &WiFiProvisioner::onSuccess(SuccessCallback callback) {
   return *this;
 }
 
+WiFiProvisioner &WiFiProvisioner::onApSuccess(ApSuccessCallback callback) {
+  onApSuccessCallback = std::move(callback);
+  return *this;
+}
+
 /**
  * @brief Handles the HTTP `/` request.
  *
@@ -364,9 +342,6 @@ WiFiProvisioner &WiFiProvisioner::onSuccess(SuccessCallback callback) {
  *
  */
 void WiFiProvisioner::handleRootRequest() {
-  if (provisionCallback) {
-    provisionCallback();
-  }
 
   size_t contentLength = strlen_P(index_html1);
 
@@ -534,6 +509,51 @@ void WiFiProvisioner::handleConfigureRequest() {
   // Signal to break from loop
   _serverLoopFlag = true;
 }
+
+void WiFiProvisioner::handleApConfigureRequest() {
+  if (!_server->hasArg("plain")) {
+    WIFI_PROVISIONER_DEBUG_LOG(WIFI_PROVISIONER_LOG_WARN,
+                               "No 'plain' argument found in request");
+    sendBadRequestResponse();
+    return;
+  }
+
+  JsonDocument doc;
+  auto error = deserializeJson(doc, _server->arg("plain"));
+  if (error) {
+    WIFI_PROVISIONER_DEBUG_LOG(WIFI_PROVISIONER_LOG_WARN,
+                               "JSON parsing failed: %s", error.c_str());
+    sendBadRequestResponse();
+    return;
+  }
+
+  const char *ssid_connect = doc["ap_name"];
+  const char *pass_connect = doc["ap_password"];
+
+  WIFI_PROVISIONER_DEBUG_LOG(
+      WIFI_PROVISIONER_LOG_INFO, "AP_NAME: %s, PASSWORD: %s",
+      ssid_connect ? ssid_connect : "", pass_connect ? pass_connect : "");
+
+  if ((!ssid_connect) || (!pass_connect)) {
+    WIFI_PROVISIONER_DEBUG_LOG(WIFI_PROVISIONER_LOG_WARN,
+                               "AP_NAME or AP_PASSWORD missing from request");
+    sendBadRequestResponse();
+    return;
+  }
+
+  handleSuccesfulConnection();
+
+  if (onApSuccessCallback) {
+    onApSuccessCallback(ssid_connect, pass_connect);
+  }
+
+  // Show success page for a while before closing the server
+  delay(7000);
+
+  // Signal to break from loop
+  _serverLoopFlag = true;
+}
+
 
 /**
  * @brief Attempts to connect to the specified Wi-Fi network.

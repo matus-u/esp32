@@ -162,9 +162,9 @@ static constexpr const char index_html1[] PROGMEM = R"rawliteral(
         box-shadow: 0 0.25rem 0.75rem var(--shadow-color);
         border-radius: 0.75rem;
         max-width: 50rem;
-        width: calc(100% - 5rem);
+        width: calc(100% - 3rem);
         padding: 2rem;
-        margin: 1rem;
+        margin: 0rem;
         text-align: center;
       }
 
@@ -357,211 +357,313 @@ static constexpr const char index_html1[] PROGMEM = R"rawliteral(
           box-shadow: inset 0rem 0rem 0rem 1.875rem #7ac142;
         }
       }
+
+    /* Hide radio buttons */
+    input[name="tabs"] {
+        display: none;
+    }
+
+    /* Tab labels */
+    .tab-label {
+        display: inline-block;
+        padding: 10px 20px;
+        margin-right: 5px;
+        background: #dee4ff;
+        cursor: pointer;
+        border-radius: 5px 5px 0 0;
+    }
+
+    /* Content sections */
+    .tab-content {
+        display: none;
+        padding: 0px;
+        border: 0px solid #ddd;
+        border-radius: 0 0px 0px 0px;
+    }
+
+    /* Show selected tab */
+    #tab1:checked ~ .tab-container-content #content1,
+    #tab2:checked ~ .tab-container-content #content2 {
+        display: block;
+    }
+
+    /* Active tab style */
+    #tab1:checked ~ .labels label[for="tab1"],
+    #tab2:checked ~ .labels label[for="tab2"] {
+        background: #8b9ffc;
+        font-weight: bold;
+    }
+
+    .tab-label.disabled {
+        pointer-events: none;
+        opacity: 0.5;
+    }
+
     </style>
   </head>
 
   <body>
+    <input type="radio" id="tab1" name="tabs" checked>
+    <input type="radio" id="tab2" name="tabs">
+
     <div class="header">
       <div id="logo-container"></div>
       <h2 id="app-title" style="margin-top: 0.5rem; margin-bottom: 0rem"></h2>
       <h4 id="app-subtitle" style="margin-top: 0.2rem"></h4>
       <p
-        id="info-text"
-        style="
-          opacity: 0.5;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-          max-width: 90%;
-          margin: 0 auto;
-          text-align: center;
-        "
-      ></p>
+          id="info-text"
+          style="
+                 opacity: 0.5;
+                 word-wrap: break-word;
+                 overflow-wrap: break-word;
+                 max-width: 90%;
+                 margin: 0 auto;
+                 text-align: center;
+                 "
+          ></p>
     </div>
-    <div id="main-card" class="card">
-      <form id="network_form" name="network_form">
-        <h3 class="connect-header">Connect to Wifi</h3>
-        <div style="overflow-x: auto">
-          <table>
-            <thead>
-              <tr>
-                <th class="radiossid">
-                  <button
-                    class="icon_button"
-                    type="button"
-                    onclick="loadSSID();"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      id="refresh-icon"
-                      style="vertical-align: -0.125em"
-                      width="1em"
-                      height="1em"
-                      preserveaspectratio="xMidYMid meet"
-                      viewbox="0 0 1536 1536"
-                    >
-                      <path
-                        fill="var(--font-color)"
-                        d="M1511 928q0 5-1 7q-64 268-268 434.5T764 1536q-146 0-282.5-55T238 1324l-129 129q-19 19-45 19t-45-19t-19-45V960q0-26 19-45t45-19h448q26 0 45 19t19 45t-19 45l-137 137q71 66 161 102t187 36q134 0 250-65t186-179q11-17 53-117q8-23 30-23h192q13 0 22.5 9.5t9.5 22.5zm25-800v448q0 26-19 45t-45 19h-448q-26 0-45-19t-19-45t19-45l138-138Q969 256 768 256q-134 0-250 65T332 500q-11 17-53 117q-8 23-30 23H50q-13 0-22.5-9.5T18 608v-7q65-268 270-434.5T768 0q146 0 284 55.5T1297 212l130-129q19-19 45-19t45 19t19 45z"
-                      ></path>
-                    </svg>
-                  </button>
-                </th>
-                <th>SSID</th>
-                <th class="signal">Signal</th>
-              </tr>
-            </thead>
-            <tbody id="table-body"></tbody>
-          </table>
-        </div>
-        <div id="hidden-network-selector">
-          <p>Hidden Network ?</p>
-          <div>
-            <input
-              type="radio"
-              id="hiddennetwork_radio"
-              name="ssid"
-              value="hiddennetwork"
-              onclick="onRadio(this);"
-            />
-            Hidden Network
-          </div>
-        </div>
-        <div class="container" id="hiddenNetwork" style="display: none">
-          <label>Network SSID</label>
-          <div id="error-ssid-input">
-            <input
-              type="text"
-              name="hidden_ssid"
-              id="ssid"
-              class="textinput"
-              placeholder="SSID"
-            />
-            <div id="error-ssid-message" class="error-message"></div>
-          </div>
-        </div>
-        <div class="container" id="hiddenPassword" style="display: none">
-          <label for="password">Network Password</label>
-          <div id="error-password-input">
-            <input
-              type="password"
-              name="password"
-              id="password"
-              style="position: relative"
-              class="textinput"
-              placeholder="Password"
-            />
-            <i
-              style="
-                margin-left: -1.25rem;
-                position: absolute;
-                margin-top: 0.5625rem;
-                padding: 0rem;
-              "
-              ><button
-                class="icon_button"
-                type="button"
-                style="padding: 0rem"
-                onclick="togglePassShow();"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  style="vertical-align: -0.125em"
-                  width="1em"
-                  height="1em"
-                  preserveaspectratio="xMidYMid meet"
-                  viewbox="0 0 24 24"
-                >
-                  <path
-                    id="eye_icon"
-                    fill="var(--font-color)"
-                    d="M10.94 6.08A6.93 6.93 0 0 1 12 6c3.18 0 6.17 2.29 7.91 6a15.23 15.23 0 0 1-.9 1.64a1 1 0 0 0-.16.55a1 1 0 0 0 1.86.5a15.77 15.77 0 0 0 1.21-2.3a1 1 0 0 0 0-.79C19.9 6.91 16.1 4 12 4a7.77 7.77 0 0 0-1.4.12a1 1 0 1 0 .34 2ZM3.71 2.29a1 1 0 0 0-1.42 1.42l3.1 3.09a14.62 14.62 0 0 0-3.31 4.8a1 1 0 0 0 0 .8C4.1 17.09 7.9 20 12 20a9.26 9.26 0 0 0 5.05-1.54l3.24 3.25a1 1 0 0 0 1.42 0a1 1 0 0 0 0-1.42Zm6.36 9.19l2.45 2.45A1.81 1.81 0 0 1 12 14a2 2 0 0 1-2-2a1.81 1.81 0 0 1 .07-.52ZM12 18c-3.18 0-6.17-2.29-7.9-6a12.09 12.09 0 0 1 2.7-3.79L8.57 10A4 4 0 0 0 14 15.43L15.59 17A7.24 7.24 0 0 1 12 18Z"
-                  ></path>
-                </svg></button
-            ></i>
-          </div>
-          <div id="error-password-message" class="error-message"></div>
-        </div>
-        <div class="container">
-          <table>
-            <thead>
-              <tr>
-                <th class="header">IP Settings:</th>
-                <th>
-                  <label>
-                    <input
-                      type="radio"
-                      name="network-mode"
-                      value="dhcp"
-                      checked
+
+    <div class="labels">
+      <label for="tab1" class="tab-label">Client mode</label>
+      <label for="tab2" class="tab-label">AP mode</label>
+    </div>
+
+
+    <div class="tab-container-content">
+      <div class="tab-content" id="content1">
+        <div id="main-card" class="card">
+          <form id="network_form" name="network_form">
+            <h3 class="connect-header">Connect to Wifi network</h3>
+            <div style="overflow-x: auto">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="radiossid">
+                      <button
+                          class="icon_button"
+                          type="button"
+                          onclick="loadSSID();"
+                          >
+                          <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              id="refresh-icon"
+                              style="vertical-align: -0.125em"
+                              width="1em"
+                              height="1em"
+                              preserveaspectratio="xMidYMid meet"
+                              viewbox="0 0 1536 1536"
+                              >
+                              <path
+                                  fill="var(--font-color)"
+                                  d="M1511 928q0 5-1 7q-64 268-268 434.5T764 1536q-146 0-282.5-55T238 1324l-129 129q-19 19-45 19t-45-19t-19-45V960q0-26 19-45t45-19h448q26 0 45 19t19 45t-19 45l-137 137q71 66 161 102t187 36q134 0 250-65t186-179q11-17 53-117q8-23 30-23h192q13 0 22.5 9.5t9.5 22.5zm25-800v448q0 26-19 45t-45 19h-448q-26 0-45-19t-19-45t19-45l138-138Q969 256 768 256q-134 0-250 65T332 500q-11 17-53 117q-8 23-30 23H50q-13 0-22.5-9.5T18 608v-7q65-268 270-434.5T768 0q146 0 284 55.5T1297 212l130-129q19-19 45-19t45 19t19 45z"
+                                  ></path>
+                          </svg>
+                      </button>
+                    </th>
+                    <th>SSID</th>
+                    <th class="signal">Signal</th>
+                  </tr>
+                </thead>
+                <tbody id="table-body"></tbody>
+              </table>
+            </div>
+            <div id="hidden-network-selector">
+              <p>Hidden Network ?</p>
+              <div>
+                <input
+                    type="radio"
+                    id="hiddennetwork_radio"
+                    name="ssid"
+                    value="hiddennetwork"
+                    onclick="onRadio(this);"
                     />
-                    DHCP
-                  </label>
-                </th>
-                <th>
-                  <label>
-                    <input type="radio" name="network-mode" value="static" />
-                    Static
-                  </label>
-                </th>
-              </tr>
-            </thead>
-          </table>
-        </div>
+                Hidden Network
+              </div>
+            </div>
+            <div class="container" id="hiddenNetwork" style="display: none">
+              <label>Network SSID</label>
+              <div id="error-ssid-input">
+                <input
+                    type="text"
+                    name="hidden_ssid"
+                    id="ssid"
+                    class="textinput"
+                    placeholder="SSID"
+                    />
+                <div id="error-ssid-message" class="error-message"></div>
+              </div>
+            </div>
+            <div class="container" id="hiddenPassword" style="display: none">
+              <label for="password">Network Password</label>
+              <div id="error-password-input">
+                <input
+                    type="password"
+                    name="password"
+                    id="password"
+                    style="position: relative"
+                    class="textinput"
+                    placeholder="Password"
+                    />
+                <i
+                    style="
+                           margin-left: -1.25rem;
+                           position: absolute;
+                           margin-top: 0.5625rem;
+                           padding: 0rem;
+                           "
+                    ><button
+                         class="icon_button"
+                         type="button"
+                         style="padding: 0rem"
+                         onclick="togglePassShow();"
+                         >
+                         <svg
+                             xmlns="http://www.w3.org/2000/svg"
+                             style="vertical-align: -0.125em"
+                             width="1em"
+                             height="1em"
+                             preserveaspectratio="xMidYMid meet"
+                             viewbox="0 0 24 24"
+                             >
+                             <path
+                                 id="eye_icon"
+                                 fill="var(--font-color)"
+                                 d="M10.94 6.08A6.93 6.93 0 0 1 12 6c3.18 0 6.17 2.29 7.91 6a15.23 15.23 0 0 1-.9 1.64a1 1 0 0 0-.16.55a1 1 0 0 0 1.86.5a15.77 15.77 0 0 0 1.21-2.3a1 1 0 0 0 0-.79C19.9 6.91 16.1 4 12 4a7.77 7.77 0 0 0-1.4.12a1 1 0 1 0 .34 2ZM3.71 2.29a1 1 0 0 0-1.42 1.42l3.1 3.09a14.62 14.62 0 0 0-3.31 4.8a1 1 0 0 0 0 .8C4.1 17.09 7.9 20 12 20a9.26 9.26 0 0 0 5.05-1.54l3.24 3.25a1 1 0 0 0 1.42 0a1 1 0 0 0 0-1.42Zm6.36 9.19l2.45 2.45A1.81 1.81 0 0 1 12 14a2 2 0 0 1-2-2a1.81 1.81 0 0 1 .07-.52ZM12 18c-3.18 0-6.17-2.29-7.9-6a12.09 12.09 0 0 1 2.7-3.79L8.57 10A4 4 0 0 0 14 15.43L15.59 17A7.24 7.24 0 0 1 12 18Z"
+                                 ></path>
+                         </svg></button
+                         ></i>
+              </div>
+                  <div id="error-password-message" class="error-message"></div>
+            </div>
+            <div class="container">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="header">IP Settings:</th>
+                    <th>
+                      <label>
+                        <input
+                            type="radio"
+                            name="network-mode"
+                            value="dhcp"
+                            checked
+                            />
+                        DHCP
+                      </label>
+                    </th>
+                    <th>
+                      <label>
+                        <input type="radio" name="network-mode" value="static" />
+                        Static
+                      </label>
+                    </th>
+                  </tr>
+                </thead>
+              </table>
+            </div>
 
-        <div class="container" id="hiddenIp" style="display: none">
-          <label>IP address</label>
-          <div id="error-ip-input">
-            <input
-              type="text"
-              name="hidden_ip"
-              id="ip"
-              class="textinput"
-              placeholder="192.168.1.10"
-            />
-            <div id="error-ip-message" class="error-message"></div>
-          </div>
-        </div>
+            <div class="container" id="hiddenIp" style="display: none">
+              <label>IP address</label>
+              <div id="error-ip-input">
+                <input
+                    type="text"
+                    name="hidden_ip"
+                    id="ip"
+                    class="textinput"
+                    placeholder="192.168.1.10"
+                    />
+                <div id="error-ip-message" class="error-message"></div>
+              </div>
+            </div>
 
-        <div class="container" id="hiddenNetmask" style="display: none">
-          <label>Netmask </label>
-          <div id="error-netmask-input">
-            <input
-              type="text"
-              name="hidden_netmask"
-              id="netmask"
-              class="textinput"
-              placeholder="255.255.255.0"
-            />
-            <div id="error-netmask-message" class="error-message"></div>
-          </div>
-        </div>
+            <div class="container" id="hiddenNetmask" style="display: none">
+              <label>Netmask </label>
+              <div id="error-netmask-input">
+                <input
+                    type="text"
+                    name="hidden_netmask"
+                    id="netmask"
+                    class="textinput"
+                    placeholder="255.255.255.0"
+                    />
+                <div id="error-netmask-message" class="error-message"></div>
+              </div>
+            </div>
 
-        <div class="container" id="hiddenGateway" style="display: none">
-          <label>Gateway </label>
-          <div id="error-gateway-input">
-            <input
-              type="text"
-              name="hidden_gateway"
-              id="gateway"
-              class="textinput"
-              placeholder="192.168.1.1"
-            />
-            <div id="error-gateway-message" class="error-message"></div>
-          </div>
-        </div>
+            <div class="container" id="hiddenGateway" style="display: none">
+              <label>Gateway </label>
+              <div id="error-gateway-input">
+                <input
+                    type="text"
+                    name="hidden_gateway"
+                    id="gateway"
+                    class="textinput"
+                    placeholder="192.168.1.1"
+                    />
+                <div id="error-gateway-message" class="error-message"></div>
+              </div>
+            </div>
 
-        <div class="container">
-          <button
-            class="btn-process"
-            id="submit-btn"
-            type="submit"
-            form="network_form"
-          >
-            Connect <span id="connecting-ring" style="display: none"></span>
-          </button>
-          <div id="error-submit-message" class="error-message"></div>
+            <div class="container">
+              <button
+                  class="btn-process"
+                  id="submit-btn"
+                  type="submit"
+                  form="network_form"
+                  >
+                  Connect <span id="connecting-ring" style="display: none"></span>
+              </button>
+              <div id="error-submit-message" class="error-message"></div>
+            </div>
+          </form>
         </div>
-      </form>
+      </div>
+      <div class="tab-content" id="content2">
+        <div id="ap-main-card" class="card">
+          <form id="ap_network_form" name="ap_network_form">
+            <h3 class="connect-header">Setup WiFi Access point mode</h3>
+
+            <div class="container" id="ApName">
+              <label>Access point network name:</label>
+              <div id="error-ap-name-input">
+                <input
+                    type="text"
+                    name="ap-name"
+                    id="ap-name"
+                    class="textinput"
+                    placeholder="ESP32_network"
+                    />
+                <div id="error-ap-name-message" class="error-message"></div>
+              </div>
+            </div>
+
+            <div class="container" id="ApPassword">
+              <label>Access point network password: </label>
+              <div id="error-ap-password-input">
+                <input
+                    type="text"
+                    name="ap-password"
+                    id="ap-password"
+                    class="textinput"
+                    />
+                <div id="error-ap-password-message" class="error-message"></div>
+              </div>
+            </div>
+
+            <div class="container">
+              <button
+                  class="btn-process"
+                  id="ap-submit-btn"
+                  type="submit"
+                  form="ap_network_form"
+                  >
+                  Setup <span id="ap-connecting-ring" style="display: none"></span>
+              </button>
+              <div id="error-ap-submit-message" class="error-message"></div>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
     <footer id="footer">
       <p id="copyright" class="copyright" style="opacity: 0.5">h</p>
@@ -587,6 +689,8 @@ static constexpr const char index_html1[] PROGMEM = R"rawliteral(
       const password_listener = document.getElementById("password")
       const dhcpRadio = document.querySelector('input[value="dhcp"]');
       const staticRadio = document.querySelector('input[value="static"]');
+      const apForm = document.getElementById("ap_network_form")
+      apForm.addEventListener("submit", submitApForm)
 
       form.addEventListener("submit", submitForm)
       ssid_listener.addEventListener("input", updateValue)
@@ -596,9 +700,16 @@ static constexpr const char index_html1[] PROGMEM = R"rawliteral(
       const gw_listener = document.getElementById("gateway");
       const netmask_listener = document.getElementById("netmask");
 
+
       ip_listener.addEventListener("input", updateIp)
       gw_listener.addEventListener("input", updateGw)
       netmask_listener.addEventListener("input", updateNetmask)
+
+      const ap_name_listener = document.getElementById("ap-name");
+      const ap_password_listener = document.getElementById("ap-password");
+
+      ap_name_listener.addEventListener("input", updateApName)
+      ap_password_listener.addEventListener("input", updateApPassword)
 
       const title_logo = `
           <svg xmlns="http://www.w3.org/2000/svg" width="5rem" height="5rem" preserveAspectRatio="xMidYMid meet" viewBox="0 0 32 32">
@@ -627,16 +738,16 @@ static constexpr const char index_html1[] PROGMEM = R"rawliteral(
       window.addEventListener("load", (event) => {
         loadSSID()
       })
-      
+
       function toggleIpFields() {
         const state = isIpStatic() ? "" : "none"
-        
+
         const ipInput = document.getElementById("hiddenIp");
         const gatewayInput = document.getElementById("hiddenGateway");
         const netmaskInput = document.getElementById("hiddenNetmask");
-        
+
         [ipInput, gatewayInput, netmaskInput].forEach(input => {
-            input.style.display = state;
+          input.style.display = state;
         });
 
         showError("gateway", "", false)
@@ -660,6 +771,15 @@ static constexpr const char index_html1[] PROGMEM = R"rawliteral(
 
       function isValidGw() {
         return isValidIpFormat(gw_listener.value);
+      }
+
+      function isValidApName() {
+
+        return ap_name_listener.value !== "";
+      }
+
+      function isValidApPassword() {
+        return ap_password_listener.value !== "";
       }
 
       function isValidMask() {
@@ -698,21 +818,33 @@ static constexpr const char index_html1[] PROGMEM = R"rawliteral(
       }
 
       function updateGw(e) {
-          if (isValidGw()) {
-            showError(e.target.id, "", false)
-          }
+        if (isValidGw()) {
+          showError(e.target.id, "", false)
+        }
       }
 
       function updateIp(e) {
-          if (isValidIp()) {
-            showError(e.target.id, "", false)
-          }
+        if (isValidIp()) {
+          showError(e.target.id, "", false)
+        }
+      }
+
+      function updateApName(e) {
+        if (isValidApName()) {
+          showError(e.target.id, "", false)
+        }
+      }
+
+      function updateApPassword(e) {
+        if (isValidApPassword()) {
+          showError(e.target.id, "", false)
+        }
       }
 
       function updateNetmask(e) {
-          if (isValidMask()) {
-            showError(e.target.id, "", false)
-          }
+        if (isValidMask()) {
+          showError(e.target.id, "", false)
+        }
       }
 
       function isRadioChecked() {
@@ -723,9 +855,9 @@ static constexpr const char index_html1[] PROGMEM = R"rawliteral(
 
       function showError(name, message, state) {
         const block =
-          name.toLowerCase() === "submit"
-            ? null
-            : document.getElementById(`error-${name}-input`)
+          (name.toLowerCase() === "submit") || (name.toLowerCase() === "ap-submit")
+          ? null
+          : document.getElementById(`error-${name}-input`)
         const messageElem = document.getElementById(`error-${name}-message`)
 
         if (block) block.classList.toggle("error", state)
@@ -738,18 +870,69 @@ static constexpr const char index_html1[] PROGMEM = R"rawliteral(
         })
       }
 
-      function connectingState(state) {
-        const ring = document.getElementById("connecting-ring")
-        const submitBtn = document.getElementById("submit-btn")
+      function resetApErrors() {
+        ;["ap-submit", "ap-password", "ap-name"].forEach((field) => {
+          showError(field, "", false)
+        })
+      }
 
-        if (!ring || !submitBtn) {
-          return
-        }
+      function submitApForm(event) {
+        event.preventDefault()
 
-        const buttonTxt = state ? "Connecting" : "Connect"
-        const ringVisi = state ? "" : "none"
-        submitBtn.innerHTML = `${buttonTxt}<span id="connecting-ring" style="display:${ringVisi};" ></span>`
-        submitBtn.disabled = state
+        const validations = [
+          {
+            condition: !isValidApName(),
+            field: "ap-name",
+            message: "AP name cannot be empty",
+          },
+          {
+            condition: !isValidApPassword(),
+            field: "ap-password",
+            message: "AP password cannot be empty",
+          },
+        ]
+
+        let hasErrors = false
+
+        validations.forEach(({ condition, field, message }) => {
+          if (condition && message) {
+            showError(field, message, true)
+            hasErrors = true
+          }
+        })
+
+        if (hasErrors) return
+
+        resetErrors()
+        connectingApState(true)
+        disableForm(true)
+
+        let payload = {}
+
+        payload.ap_name = ap_name_listener.value
+        payload.ap_password = ap_password_listener.value
+
+        fetch("/configure_ap", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        })
+          .then((response) => {
+            if (!response.ok) throw new Error("Failed to configure AP")
+            return response.json()
+          })
+          .then((jsonResponse) => {
+            if (jsonResponse.success) {
+              successPage(payload.ap_name)
+            } else {
+                showError("submit", `Couldn't configure AP mode`, true)
+            }
+          })
+          .catch(() => showError("submit", "Error on AP mode request", true))
+          .finally(() => {
+            connectingApState(false)
+            disableForm(false)
+          })
       }
 
       function submitForm(event) {
@@ -768,7 +951,7 @@ static constexpr const char index_html1[] PROGMEM = R"rawliteral(
           },
           {
             condition:
-              isPasswordVisible() && !isHidden() && !password_listener.value,
+            isPasswordVisible() && !isHidden() && !password_listener.value,
             field: "password",
             message: "Password is required",
           },
@@ -816,9 +999,9 @@ static constexpr const char index_html1[] PROGMEM = R"rawliteral(
 
         payload.dhcp_enabled = !isIpStatic()
         if (isIpStatic()) {
-            payload.ip = ip_listener.value
-            payload.gw = gw_listener.value
-            payload.netmask = netmask_listener.value
+          payload.ip = ip_listener.value
+          payload.gw = gw_listener.value
+          payload.netmask = netmask_listener.value
         }
 
         if ((isAuth() || isHidden()) && password_listener.value) {
@@ -865,12 +1048,12 @@ static constexpr const char index_html1[] PROGMEM = R"rawliteral(
        </div>
        <div class="container" style="padding: 1rem;">
          <h2 style="color:#7ac142;word-break: break-word;">Success</h2>
-         <p style="color:#7ac142;word-break: break-word;font-size:1.2rem;margin-bottom: 0.5rem;">Succesfully connected to</p>
-         <p style="color:#7ac142;word-break: break-word;margin-top: 0rem;">${ssid_text}</p>
-         <p style="opacity: 0.5;">${connection_successful_text}</p>
-         <p style="opacity: 0.5;">You can close the window</p>
-       </div>
-       `
+          <p style="color:#7ac142;word-break: break-word;font-size:1.2rem;margin-bottom: 0.5rem;">Succesfully connected to</p>
+          <p style="color:#7ac142;word-break: break-word;margin-top: 0rem;">${ssid_text}</p>
+          <p style="opacity: 0.5;">${connection_successful_text}</p>
+          <p style="opacity: 0.5;">You can close the window</p>
+          </div>
+        `
       }
 
       function onRadio(element) {
@@ -893,6 +1076,19 @@ static constexpr const char index_html1[] PROGMEM = R"rawliteral(
 
       function disableForm(state) {
         Array.from(form.elements).forEach((el) => (el.disabled = state))
+        Array.from(apForm.elements).forEach((el) => (el.disabled = state))
+
+        if (state) {
+          document.querySelectorAll(".tab-label").forEach(label => {
+                      label.classList.add("disabled");
+                  });
+        } else {
+          document.querySelectorAll(".tab-label").forEach(label => {
+                      label.classList.remove("disabled");
+                  });
+        }
+
+
         disableLinks(state)
       }
 
@@ -932,16 +1128,16 @@ static constexpr const char index_html1[] PROGMEM = R"rawliteral(
         const locked = authmode > 0 ? 1 : 0
         const icon = svgs["" + rssi + locked]
         table.innerHTML += `
-       <tr>
-           <td class="radiossid">
-             <input type="radio" name="ssid" value="${ssid}" data-auth="${authmode}" onclick="onRadio(this)">
-           </td>
-           <td>${ssid}</td>
-           <td class="signal">
-             <svg xmlns="http://www.w3.org/2000/svg" style="vertical-align: -0.125em;" width="1em" height="1em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24"><path fill="var(--font-color)" ${icon}
-           </td>
-       </tr>
-       `
+          <tr>
+          <td class="radiossid">
+          <input type="radio" name="ssid" value="${ssid}" data-auth="${authmode}" onclick="onRadio(this)">
+          </td>
+          <td>${ssid}</td>
+          <td class="signal">
+          <svg xmlns="http://www.w3.org/2000/svg" style="vertical-align: -0.125em;" width="1em" height="1em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24"><path fill="var(--font-color)" ${icon}
+          </td>
+          </tr>
+        `
       }
 
       function togglePassShow() {
@@ -1003,6 +1199,20 @@ static constexpr const char index_html1[] PROGMEM = R"rawliteral(
         const buttonTxt = state ? "Connecting" : "Connect"
         const ringVisi = state ? "" : "none"
         submitBtn.innerHTML = `${buttonTxt}<span id="connecting-ring" style="display:${ringVisi};" ></span>`
+        submitBtn.disabled = state
+      }
+
+      function connectingApState(state) {
+        const ring = document.getElementById("ap-connecting-ring")
+        const submitBtn = document.getElementById("ap-submit-btn")
+
+        if (!ring || !submitBtn) {
+          return
+        }
+
+        const buttonTxt = state ? "Setup in progress" : "Setup"
+        const ringVisi = state ? "" : "none"
+        submitBtn.innerHTML = `${buttonTxt}<span id="ap-connecting-ring" style="display:${ringVisi};" ></span>`
         submitBtn.disabled = state
       }
     </script>
