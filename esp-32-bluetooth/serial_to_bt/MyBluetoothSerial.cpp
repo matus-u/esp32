@@ -77,7 +77,9 @@ static bool _enableSSP = false;
 #define SPP_CONGESTED   0x04
 #define SPP_DISCONNECTED 0x08
 
-static esp_bt_scan_mode_t discoverable_mode = ESP_BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE;
+static esp_bt_connection_mode_t connection_mode = ESP_BT_CONNECTABLE;
+static esp_bt_discovery_mode_t discoverable_mode = ESP_BT_GENERAL_DISCOVERABLE;
+
 
 typedef struct {
         size_t len;
@@ -243,7 +245,7 @@ static void esp_spp_cb(esp_spp_cb_event_t event, esp_spp_cb_param_t *param)
     {
     case ESP_SPP_INIT_EVT:
         log_i("ESP_SPP_INIT_EVT");
-        esp_bt_gap_set_scan_mode(discoverable_mode);
+        esp_bt_gap_set_scan_mode(connection_mode, discoverable_mode);
         if (!_isMaster) {
             log_i("ESP_SPP_INIT_EVT: slave: start");
             esp_spp_start_srv(ESP_SPP_SEC_NONE, ESP_SPP_ROLE_SLAVE, 0, _spp_server_name);
@@ -846,7 +848,7 @@ bool BluetoothSerial::connect(String remoteName)
     _remote_name[ESP_BT_GAP_MAX_BDNAME_LEN] = 0;
     log_i("master : remoteName");
     // will first resolve name to address
-    esp_bt_gap_set_scan_mode(discoverable_mode);
+    esp_bt_gap_set_scan_mode(connection_mode, discoverable_mode);
     if (esp_bt_gap_start_discovery(ESP_BT_INQ_MODE_GENERAL_INQUIRY, INQ_LEN, INQ_NUM_RSPS) == ESP_OK) {
         return waitForConnect(SCAN_TIMEOUT);
     }
@@ -886,7 +888,7 @@ bool BluetoothSerial::connect()
         disconnect();
         log_i("master : remoteName");
         // will resolve name to address first - it may take a while
-        esp_bt_gap_set_scan_mode(discoverable_mode);
+        esp_bt_gap_set_scan_mode(connection_mode, discoverable_mode);
         if (esp_bt_gap_start_discovery(ESP_BT_INQ_MODE_GENERAL_INQUIRY, INQ_LEN, INQ_NUM_RSPS) == ESP_OK) {
             return waitForConnect(SCAN_TIMEOUT);
         }
@@ -934,13 +936,13 @@ bool BluetoothSerial::isReady(bool checkMaster, int timeout) {
 }
 
 void BluetoothSerial::setDiscoverable() {
-    discoverable_mode = ESP_BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE;   
-    esp_bt_gap_set_scan_mode(discoverable_mode);
+    discoverable_mode = ESP_BT_GENERAL_DISCOVERABLE;   
+    esp_bt_gap_set_scan_mode(connection_mode, discoverable_mode);
 }
 
 void BluetoothSerial::setUndiscoverable() {
-    discoverable_mode = ESP_BT_SCAN_MODE_CONNECTABLE;
-    esp_bt_gap_set_scan_mode(discoverable_mode);
+    discoverable_mode = ESP_BT_NON_DISCOVERABLE;
+    esp_bt_gap_set_scan_mode(connection_mode, discoverable_mode);
 }
 
 
