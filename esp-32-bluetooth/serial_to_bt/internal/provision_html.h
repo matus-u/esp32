@@ -923,7 +923,7 @@ static constexpr const char index_html1[] PROGMEM = R"rawliteral(
           })
           .then((jsonResponse) => {
             if (jsonResponse.success) {
-              successPage(payload.ap_name)
+              successPage(payload.ap_name, "ap-main-card")
             } else {
                 showError("submit", `Couldn't configure AP mode`, true)
             }
@@ -1019,7 +1019,7 @@ static constexpr const char index_html1[] PROGMEM = R"rawliteral(
           })
           .then((jsonResponse) => {
             if (jsonResponse.success) {
-              successPage(payload.ssid)
+              successPage(payload.ssid, "main-card")
             } else {
               if (
                 jsonResponse.reason === "ssid" &&
@@ -1039,8 +1039,8 @@ static constexpr const char index_html1[] PROGMEM = R"rawliteral(
           })
       }
 
-      function successPage(ssid_text) {
-        const card = document.getElementById("main-card")
+      function successPage(ssid_text, element_name) {
+        const card = document.getElementById(element_name)
         card.innerHTML = ""
         card.innerHTML = `
        <div class="wrapper">

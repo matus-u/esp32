@@ -137,15 +137,17 @@ void cmdProtocolFuncWifi(WiFiClient *client) {
         client->write('\n');
     }
 }
+bool isInApMode = false;
 
 void setup() {
 
+    Serial.setTimeout(2000);
     Serial.begin(9600);
-    Serial.setTimeout(5000);
+    delay(1000);
     String checkMsg = Serial.readStringUntil('\n');
-    Serial.setTimeout(1000);
+    
 
-    bool hasCorrectConfig = false;
+    bool hasCorrectConfig = true;
     Preferences preferences;
     preferences.begin("wifi-provision", true);
     bool apMode = preferences.getBool("ap-mode", false);
@@ -172,12 +174,12 @@ void setup() {
         }
       }
     }
-
+    
     if (ssid.isEmpty()) {
       hasCorrectConfig = false;
     }
 
-    if ((!apMode) && (password.isEmpty())) {
+    if (apMode && (password.isEmpty())) {
       hasCorrectConfig = false;
     }
     preferences.end();
@@ -186,9 +188,11 @@ void setup() {
 
       WiFiProvisioner provisioner;
 
+      //serialPrint("PROVISION START");
       provisioner.onSuccess(
+          
           [](const char *ssid, const char *password, IpSettings* settings) {
-
+          //serialPrint("ON SUCCESS");
           Preferences preferences;
           preferences.begin("wifi-provision", false);
           preferences.putString("ssid", String(ssid));
@@ -203,23 +207,27 @@ void setup() {
           preferences.putString("subnet", settings->netmask.toString());
           preferences.putString("gateway", settings->gw.toString());
           preferences.end();
+          //serialPrint(String(ssid));
+          //serialPrint(String(password));
 
       });
 
       provisioner.onApSuccess(
           [](const char *ssid, const char *password) {
-
+          //serialPrint("ON AP SUCCESS");
           Preferences preferences;
           preferences.begin("wifi-provision", false);
           preferences.putBool("ap-mode", true);
           preferences.putString("ssid", String(ssid));
           preferences.putString("password", String(password));
           preferences.end();
+          //serialPrint(String(ssid));
+          //serialPrint(String(password));
 
       });
 
       provisioner.startProvisioning();
-      delay(10000);
+      delay(5000);
       ESP.restart();
     }
 
@@ -236,7 +244,7 @@ void setup() {
           }
       }
 
-      if (wifiConnect(ssid, password)) {
+      if (!wifiConnect(ssid, password)) {
           delay(5000);
           ESP.restart();
       }
@@ -256,9 +264,11 @@ void setup() {
       }
       delay(100);
       if (!WiFi.softAP(ssid, password)) {
+        //serialPrint("SOFT AP FAILED");
         delay(3000);
         ESP.restart();
       }
+      isInApMode = true;
     }
 
     wifiServer = new WiFiServer(port);
@@ -270,7 +280,7 @@ long count = 1;
 
 void loop() {
 
-    if (WiFi.status() != WL_CONNECTED) {
+    if ((!isInApMode) && (WiFi.status() != WL_CONNECTED)) {
         delay(5000);
         ESP.restart();
     }
@@ -293,7 +303,7 @@ void loop() {
         }
 
         client.stop();
-        Serial.println("Client disconnected");
+        //Serial.println("Client disconnected");
 
     } else {
         if (Serial.available()) {
