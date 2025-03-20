@@ -13,7 +13,7 @@
 #include <WiFiProvisioner.h>
 
 WiFiServer *wifiServer;
-int port = 8000;
+int port = 10001;
 
 void serialPrint(String data) {
     Serial.println(data);
@@ -141,9 +141,10 @@ bool isInApMode = false;
 
 void setup() {
 
-    Serial.setTimeout(2000);
     Serial.begin(9600);
-    delay(1000);
+    delay(100);
+    Serial.setTimeout(2000);
+    delay(100);
     String checkMsg = Serial.readStringUntil('\n');
     
 
