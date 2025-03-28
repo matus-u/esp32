@@ -11,6 +11,7 @@
 
 #include <WiFi.h>
 #include <WiFiProvisioner.h>
+#include <nvs_flash.h>
 
 WiFiServer *wifiServer;
 int port = 10001;
@@ -141,12 +142,20 @@ bool isInApMode = false;
 
 void setup() {
 
+    delay(1000);
     Serial.begin(9600);
     delay(100);
     Serial.setTimeout(2000);
     delay(100);
     String checkMsg = Serial.readStringUntil('\n');
-    
+
+    bool toProvision = false;
+    if (checkMsg == "sta") {
+      toProvision = true;
+      nvs_flash_erase(); // erase the NVS partition and...
+      nvs_flash_init(); // initialize the NVS partition.
+      serialPrint("@OK");
+    } 
 
     bool hasCorrectConfig = true;
     Preferences preferences;
@@ -175,7 +184,7 @@ void setup() {
         }
       }
     }
-    
+
     if (ssid.isEmpty()) {
       hasCorrectConfig = false;
     }
@@ -185,7 +194,8 @@ void setup() {
     }
     preferences.end();
 
-    if (!hasCorrectConfig  || checkMsg=="start-provisioning") {
+
+    if ((!hasCorrectConfig) || (toProvision)) {
 
       WiFiProvisioner provisioner;
 
